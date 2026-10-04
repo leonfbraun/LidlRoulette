@@ -2,7 +2,7 @@ local addonName, addonTable = ...
 
 addonTable.AnnouncementUi = {}
 
-local AnnouncementUI = addonTable.AnnouncementUi
+local AnnouncementUi = addonTable.AnnouncementUi
 
 local announcementFrame
 local playerAnnouncementText
@@ -11,7 +11,7 @@ local challengeDescriptionText
 local fadeOutAnimation
 local hideTimer
 
-function AnnouncementUI:Initialize()
+function AnnouncementUi:Initialize()
     announcementFrame = CreateFrame("Frame", nil, UIParent)
     announcementFrame:SetSize(900, 150)
     announcementFrame:SetPoint("CENTER", UIParent, "CENTER", 0, 350)
@@ -48,7 +48,7 @@ function AnnouncementUI:Initialize()
     announcementFrame:Hide()
 end
 
-function AnnouncementUI:ShowAnnouncement(playerName, level, challengeID, reason)
+function AnnouncementUi:ShowAnnouncement(playerName, level, challengeID, reason)
     local challenge = addonTable.Roulette:GetChallenge(challengeID)
     if not challenge then
         return

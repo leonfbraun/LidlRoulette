@@ -10,6 +10,7 @@ function addonTable:Initialize()
     end
     self.Events:RegisterCommunicationEvents()
 
+    self.SettingsUi:Initialize()
     self.ChallengeRouletteUi:Initialize()
     self.AnnouncementUi:Initialize()
 
