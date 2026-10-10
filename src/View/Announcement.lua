@@ -48,7 +48,7 @@ function AnnouncementUi:Initialize()
     announcementFrame:Hide()
 end
 
-function AnnouncementUi:ShowAnnouncement(playerName, level, challengeID, reason)
+function AnnouncementUi:ShowChallengeAnnouncement(playerName, level, challengeID, reason)
     local challenge = addonTable.Roulette:GetChallenge(challengeID)
     if not challenge then
         return
