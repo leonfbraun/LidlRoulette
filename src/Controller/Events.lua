@@ -12,8 +12,12 @@ frame:RegisterEvent("PLAYER_LEVEL_UP")
 frame:RegisterEvent("PLAYER_DEAD")
 frame:RegisterEvent("CHAT_MSG_SYSTEM")
 
-local patternKnockout = "(.+) has defeated (.+) in a duel"
-local patternRetreat = "(.+) has fled from (.+) in a duel"
+local function makeDuelPattern(format)
+    return format:gsub("%%[%d]+%$s", "(.+)"):gsub("%%s", "(.+)")
+end
+
+local patternKnockout = makeDuelPattern(DUEL_WINNER_KNOCKOUT)
+local patternRetreat = makeDuelPattern(DUEL_WINNER_RETREAT)
 
 local function handleDuelResult(message)
     local firstName, lastName = UnitName("player")
@@ -21,29 +25,21 @@ local function handleDuelResult(message)
 
     local winner, loser = message:match(patternKnockout)
 
-    local winnerString = tostring(winner)
-    local loserString = tostring(loser)
-
-    print("Winner: " .. winnerString)
-    print("Loser: " .. loserString)
-
-    if winnerString and loserString then
-        if winnerString == fullName then
-            print("Duell-Ergebnis: Du hast GEWONNEN gegen " .. loserString .. "!")
-        elseif loserString == fullName then
-            print("Duell-Ergebnis: Du hast VERLOREN gegen " .. winnerString .. "!")
+    if winner and loser then
+        if winner == fullName then
+            print("Duell-Ergebnis: Du hast GEWONNEN gegen " .. loser .. "!")
+        elseif loser == fullName then
+            print("Duell-Ergebnis: Du hast VERLOREN gegen " .. winner .. "!")
         end
         return
     end
 
     local fleer, pursuer = message:match(patternRetreat)
 
-    local fleerString = tostring(fleer)
-    local pursuerString = tostring(pursuer)
-    if fleerString and pursuerString then
-        if pursuerString == fullName then
-            print("Duell-Ergebnis: Du hast GEWONNEN, weil " .. fleerString .. " abgehauen ist!")
-        elseif fleerString == fullName then
+    if fleer and pursuer then
+        if pursuer == fullName then
+            print("Duell-Ergebnis: Du hast GEWONNEN, weil " .. fleer .. " abgehauen ist!")
+        elseif fleer == fullName then
             print("Duell-Ergebnis: Du hast VERLOREN, weil du abgehauen bist!")
         end
         return
