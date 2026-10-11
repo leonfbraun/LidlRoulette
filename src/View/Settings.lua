@@ -3,27 +3,82 @@ local addonName, addonTable = ...
 addonTable.SettingsUi = {}
 local SettingsUi = addonTable.SettingsUi
 
-local frame
+SettingsUi.panel = CreateFrame("Frame", "LidlRouletteSettingsPanel", UIParent)
+SettingsUi.panel.name = "Lidl Roulette"
+SettingsUi.panel.checkboxes = {}
 
-function SettingsUi:Initialize()
-    frame = CreateFrame("Frame", "SettingsFrame", UIParent)
-    frame:SetPoint("CENTER", UIParent, "CENTER", 0, 200)
-    frame:SetSize(600, 350)
+local function CreatePanelHeading()
+    local title = SettingsUi.panel:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+    title:SetPoint("TOPLEFT", 16, -16)
+    title:SetText(SettingsUi.panel.name)
 
-    local background = frame:CreateTexture(nil, "BACKGROUND")
-    background:SetAllPoints()
-    background:SetColorTexture(0.03, 0.03, 0.03, 0.96)
+    local description = SettingsUi.panel:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    description:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -8)
+    description:SetText("Passe die möglichen Challenges an, die du erhalten kannst.")
+end
 
-    local titleText = frame:CreateFontString("TitleText", "OVERLAY", "GameFontNormalLarge")
-    titleText:SetFont("Fonts\\FRIZQT__.TTF", 25, "OUTLINE")
-    titleText:SetPoint("CENTER", frame, "TOP", 0, -20)
-    titleText:SetText("Einstellungen")
+local function CreateEnableRouletteCheckbox()
+    local checkbox = CreateFrame("CheckButton", nil, SettingsUi.panel, "UICheckButtonTemplate")
+    checkbox:SetPoint("TOPLEFT", SettingsUi.panel, "TOPLEFT", 16, -80)
+    checkbox:SetChecked(LidlRouletteDB.settings.isRouletteEnabled)
 
-    local checkbox = CreateFrame("CheckButton", "TitleText" , frame, "UICheckButtonTemplate")
-    checkbox:SetPoint("CENTER", frame, "TOP", 0, -40)
-    checkbox:SetChecked(SettingsUi.enabled)
+    local label = checkbox:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    label:SetPoint("LEFT", checkbox, "RIGHT", 4, 0)
+    label:SetText("Roulette aktiviert")
 
     checkbox:SetScript("OnClick", function(self)
-        SettingsUi.enabled = self:GetChecked() and true or false
+        local isChecked = self:GetChecked()
+        LidlRouletteDB.settings.isRouletteEnabled = isChecked
+        print("|cff2674cc[L|cffff0000i|rDL Roulette]|r Roulette " .. (isChecked and "aktiviert" or "deaktiviert"))
     end)
+
+    table.insert(SettingsUi.panel.checkboxes, checkbox)
+    
 end
+
+CreatePanelHeading()
+CreateEnableRouletteCheckbox()
+
+local settingsCategory
+local function OpenSettings()
+    if settingsCategory and Settings and Settings.OpenToCategory then
+        Settings.OpenToCategory(settingsCategory:GetID())
+        return
+    end
+
+    local openLegacySettings = _G.InterfaceOptionsFrame_OpenToCategory
+    if openLegacySettings then
+        openLegacySettings(SettingsUi.panel)
+        openLegacySettings(SettingsUi.panel)
+    end
+end
+
+local registrationFrame = CreateFrame("Frame")
+registrationFrame:RegisterEvent("ADDON_LOADED")
+registrationFrame:SetScript("OnEvent", function(self, _, loadedAddonName)
+    if loadedAddonName ~= addonName then
+        return
+    end
+
+    local interfaceOptionsAddCategory = _G.InterfaceOptions_AddCategory
+
+    if Settings and Settings.RegisterCanvasLayoutCategory then
+        settingsCategory = Settings.RegisterCanvasLayoutCategory(SettingsUi.panel, SettingsUi.panel.name)
+        Settings.RegisterAddOnCategory(settingsCategory)
+    elseif interfaceOptionsAddCategory then
+        interfaceOptionsAddCategory(SettingsUi.panel)
+    else
+        error("No supported interface options registration API found")
+    end
+
+    local compartment = _G.AddonCompartmentFrame
+    if compartment and compartment.RegisterAddon then
+        compartment:RegisterAddon({
+            text = SettingsUi.panel.name,
+            func = OpenSettings,
+        })
+    end
+
+    self:UnregisterEvent("ADDON_LOADED")
+end)
+

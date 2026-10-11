@@ -3,6 +3,7 @@
 ## Notes: This addon randomly selects a challenge for the player to complete.
 ## Author: Leon Braun
 ## Version: 0.1.0
+## SavedVariables: LidlRouletteDB
 
 src/LidlRoulette.lua
 src/Model/Challenges.lua

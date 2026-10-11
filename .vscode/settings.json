@@ -4,7 +4,9 @@
         "SlashCmdList",
         "UISpecialFrames",
         "SOUNDKIT",
-        "Settings"
+        "Settings",
+        "DUEL_WINNER_KNOCKOUT",
+        "DUEL_WINNER_RETREAT"
     ],
     "Lua.runtime.version": "Lua 5.1",
     "Lua.runtime.builtin": {

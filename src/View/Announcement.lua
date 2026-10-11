@@ -48,12 +48,7 @@ function AnnouncementUi:Initialize()
     announcementFrame:Hide()
 end
 
-function AnnouncementUi:ShowChallengeAnnouncement(playerName, level, challengeID, reason)
-    local challenge = addonTable.Roulette:GetChallenge(challengeID)
-    if not challenge then
-        return
-    end
-    
+function AnnouncementUi:ShowAnnouncement(playerName, level, challengeID, reason)
     local announcementMessage
     if reason == "death" then
         announcementMessage = "|cffffffff" .. playerName .. "|r ist mit Level " .. tostring(level) .. " gestorben."
@@ -64,16 +59,22 @@ function AnnouncementUi:ShowChallengeAnnouncement(playerName, level, challengeID
     end
     
     playerAnnouncementText:SetText(announcementMessage)
-    local rarityColorCode = addonTable.Roulette.GetRarityColorHexCode(challenge.rarity)
-    
-    local challengeTitle = "Challenge: |cff" .. rarityColorCode .. "[" .. challenge.title .. "]|r"
-    challengeTitleText:SetText(challengeTitle)
-
-    challengeDescriptionText:SetText(challenge.description)
-
     print("|cff2674cc[L|cffff0000i|rDL Roulette]|r " .. announcementMessage)
-    print("|cff2674cc[L|cffff0000i|rDL Roulette]|r " .. challengeTitle)
-    print("|cff2674cc[L|cffff0000i|rDL Roulette]|r " .. challenge.description)
+
+    if(challengeID) then
+        local challenge = addonTable.Roulette:GetChallenge(challengeID)
+        local rarityColorCode = addonTable.Roulette.GetRarityColorHexCode(challenge.rarity)
+        local challengeTitle = "Challenge: |cff" .. rarityColorCode .. "[" .. challenge.title .. "]|r"
+
+        challengeTitleText:SetText(challengeTitle)
+        challengeDescriptionText:SetText(challenge.description)
+
+        print("|cff2674cc[L|cffff0000i|rDL Roulette]|r " .. challengeTitle)
+        print("|cff2674cc[L|cffff0000i|rDL Roulette]|r " .. challenge.description)
+    else
+        challengeTitleText:SetText("")
+        challengeDescriptionText:SetText("")
+    end
 
     if hideTimer then
         hideTimer:Cancel()

@@ -17,10 +17,10 @@ end
 
 function Communication:SendLevelUp(playerName, level, challengeID, eventID)
     local message = string.format(
-        "LEVELUP|%s|%d|%d|%s",
+        "LEVELUP|%s|%d|%s|%s",
         playerName,
         level,
-        challengeID,
+        challengeID and tostring(challengeID) or "-",
         eventID
     )
 
@@ -51,10 +51,10 @@ end
 
 function Communication:SendDeath(playerName, level, challengeID, eventID)
     local message = string.format(
-        "DEATH|%s|%d|%d|%s",
+        "DEATH|%s|%d|%s|%s",
         playerName,
         level,
-        challengeID,
+        challengeID and tostring(challengeID) or "-",
         eventID
     )
 
@@ -97,12 +97,23 @@ function Communication:OnMessageReceived(prefix, message, channel, sender)
     end
 
     local playerLevel = tonumber(level)
-    local playerChallengeID = tonumber(challengeID)
+    local playerChallengeID
+    if challengeID ~= "-" then
+        playerChallengeID = tonumber(challengeID)
+        if not playerChallengeID then
+            print("|cffff0000[Lidl Roulette]|r Ungültige Nachricht von " .. tostring(sender))
+            return
+        end
+    end
 
-    if not playerName or not playerLevel or not playerChallengeID or not eventID then
+    if not playerName or not playerLevel or not eventID or eventID == "" then
         print("|cffff0000[Lidl Roulette]|r Ungültige Nachricht von " .. tostring(sender))
         return
     end
 
-    addonTable:OnRemoteLevelUp(playerName, playerLevel, playerChallengeID, eventID, sender)
+    if command == "LEVELUP" then
+        addonTable:OnRemoteLevelUp(playerName, playerLevel, playerChallengeID, eventID, sender)
+    else
+        addonTable:OnRemoteDeath(playerName, playerLevel, playerChallengeID, eventID, sender)
+    end
 end
