@@ -32,6 +32,10 @@ local function CreateEnableRouletteCheckbox()
         print("|cff2674cc[L|cffff0000i|rDL Roulette]|r Roulette " .. (isChecked and "aktiviert" or "deaktiviert"))
     end)
 
+    SettingsUi.panel:SetScript("OnShow", function()
+        checkbox:SetChecked(LidlRouletteDB.settings.isRouletteEnabled)
+    end)
+
     table.insert(SettingsUi.panel.checkboxes, checkbox)
     
 end
@@ -81,4 +85,3 @@ registrationFrame:SetScript("OnEvent", function(self, _, loadedAddonName)
 
     self:UnregisterEvent("ADDON_LOADED")
 end)
-
