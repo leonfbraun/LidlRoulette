@@ -36,11 +36,10 @@ function addonTable:Initialize()
     end
     self.Events:RegisterCommunicationEvents()
 
-    self.SettingsUi:Initialize()
     self.ChallengeRouletteUi:Initialize()
     self.AnnouncementUi:Initialize()
-
     self:PrintHelp()
+
 end
 
 -- creates a unique event ID based on the player's name, current timestamp, and a random number
