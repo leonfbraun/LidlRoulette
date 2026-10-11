@@ -44,10 +44,6 @@ local function handleDuelResult(message)
         end
         return
     end
-
-    if message:find(DUEL_FLED, 1, true) then
-        print("Duell-Ergebnis: Du hast VERLOREN, weil du geflohen bist!")
-    end
 end
 
 frame:SetScript("OnEvent", function(self, event, ...)
