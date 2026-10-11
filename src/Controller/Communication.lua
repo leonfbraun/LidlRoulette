@@ -83,16 +83,51 @@ function Communication:SendDeath(playerName, level, challengeID, eventID)
     end
 end
 
+function Communication:SendDuelLoss(playerName, challengerName,level, challengeID, eventID)
+    local message = string.format(
+        "DUEL|%s|%d|%s|%s|%s",
+        playerName,
+        level,
+        challengeID and tostring(challengeID) or "-",
+        eventID,
+        challengerName or "-"
+    )
+
+    local partyMessageSuccess, partyMessageErrorMessage = C_ChatInfo.SendAddonMessage(
+        addonTable.PREFIX,
+        message,
+        "PARTY"
+    )
+
+    local guildMessageSuccess, guildMessageErrorMessage = C_ChatInfo.SendAddonMessage(
+        addonTable.PREFIX,
+        message,
+        "GUILD"
+    )
+
+    if partyMessageSuccess == false and guildMessageSuccess == false then
+        print("|cffff0000[Lidl Roulette]|r Nachricht konnte nicht gesendet werden.")
+
+        if partyMessageErrorMessage then
+            print("|cffff0000Fehler:|r " .. tostring(partyMessageErrorMessage))
+        end
+
+        if guildMessageErrorMessage then
+            print("|cffff0000Fehler:|r " .. tostring(guildMessageErrorMessage))
+        end
+    end
+end
+
 
 function Communication:OnMessageReceived(prefix, message, channel, sender)
     if prefix ~= addonTable.PREFIX or not message then
         return
     end
 
-    local command, playerName, level, challengeID, eventID =
+    local command, playerName, level, challengeID, eventID, challengerName =
         strsplit("|", message)
 
-    if command ~= "LEVELUP" and command ~= "DEATH" then
+    if command ~= "LEVELUP" and command ~= "DEATH" and command ~= "DUEL" then
         return
     end
 
@@ -113,7 +148,10 @@ function Communication:OnMessageReceived(prefix, message, channel, sender)
 
     if command == "LEVELUP" then
         addonTable:OnRemoteLevelUp(playerName, playerLevel, playerChallengeID, eventID, sender)
-    else
+    elseif command == "DEATH" then
         addonTable:OnRemoteDeath(playerName, playerLevel, playerChallengeID, eventID, sender)
+    elseif command == "DUEL" then
+        addonTable:onRemoteDuelLoss(playerName, challengerName, level, challengeID, eventID, sender)
     end
+
 end

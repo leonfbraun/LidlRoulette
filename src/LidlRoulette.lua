@@ -4,6 +4,9 @@ addonTable.PREFIX = "LIDL_ROULETTE"
 addonTable.VERSION = "0.1.0"
 addonTable.ProcessedEvents = {}
 
+addonTable.patternKnockout = DUEL_WINNER_KNOCKOUT:gsub("%%[%d]+%$s", "(.+)"):gsub("%%s", "(.+)")
+addonTable.patternRetreat = DUEL_WINNER_RETREAT:gsub("%%[%d]+%$s", "(.+)"):gsub("%%s", "(.+)")
+
 local function EnsureSavedSettings()
     if type(LidlRouletteDB) ~= "table" then
         LidlRouletteDB = {}
@@ -51,7 +54,6 @@ function addonTable:CreateEventID()
     return string.format("%s-%d-%d", playerName, timestamp, randomNumber)
 end
 
--- handles local level up
 function addonTable:OnLocalLevelUp(level)
     local playerName = UnitName("player")
 
@@ -69,8 +71,6 @@ function addonTable:OnLocalLevelUp(level)
         " ist jetzt Level " .. tostring(level) .. "!")
     if challengeID then
         self.ChallengeRouletteUi:ShowChallenge(playerName, level, challengeID, "levelup")
-    else
-        self.AnnouncementUi:ShowAnnouncement(playerName, level, nil, "levelup")
     end
 
     self.ProcessedEvents[eventID] = true
@@ -80,7 +80,6 @@ function addonTable:OnLocalLevelUp(level)
     end)
 end
 
--- handles local death
 function addonTable:OnLocalDeath()
     local playerName = UnitName("player")
 
@@ -99,8 +98,6 @@ function addonTable:OnLocalDeath()
     if challengeID then
         print("|cff2674cc[L|cffff0000i|rDL Roulette]|r " .. playerName .. " ist mit Level " .. tostring(playerLevel) .. " gestorben.")
         self.ChallengeRouletteUi:ShowChallenge(playerName, playerLevel, challengeID, "death")
-    else
-        self.AnnouncementUi:ShowAnnouncement(playerName, playerLevel, nil, "death")
     end
 
     self.ProcessedEvents[eventID] = true
@@ -111,6 +108,29 @@ function addonTable:OnLocalDeath()
     
 end
 
+function addonTable:OnLocalDuelLoss(winnerName, loserName) 
+    local playerLevel = UnitLevel("player") or 1
+
+    local eventID = self:CreateEventID()
+    local challengeID
+    if LidlRouletteDB.settings.isRouletteEnabled == true then
+        challengeID = self.Roulette:Roll()
+    end
+
+    print("|cff2674cc[L|cffff0000i|rDL Roulette]|r " .. winnerName ..
+        " hat dich im Duell besiegt!")
+    if challengeID then
+        self.ChallengeRouletteUi:ShowChallenge(loserName, playerLevel, challengeID, "duel")
+    end
+
+    self.ProcessedEvents[eventID] = true
+    
+    C_Timer.After(3, function() 
+        self.Communication:SendDuelLoss(loserName, winnerName, playerLevel, challengeID, eventID)
+    end)
+end
+
+-- handles remote levelUp (recieved from another player)
 function addonTable:OnRemoteLevelUp(playerName, level, challengeID, eventID, sender)
     if self.ProcessedEvents[eventID] then
         return
@@ -118,10 +138,10 @@ function addonTable:OnRemoteLevelUp(playerName, level, challengeID, eventID, sen
 
     self.ProcessedEvents[eventID] = true
 
-    self.AnnouncementUi:ShowAnnouncement(playerName, level, challengeID, "levelup")
+    self.AnnouncementUi:ShowAnnouncement(playerName, nil, level, challengeID, "levelup")
 end
 
-
+-- handles remote death (recieved from another player)
 function addonTable:OnRemoteDeath(playerName, level, challengeID, eventID, sender)
     if self.ProcessedEvents[eventID] then
         return
@@ -129,7 +149,44 @@ function addonTable:OnRemoteDeath(playerName, level, challengeID, eventID, sende
 
     self.ProcessedEvents[eventID] = true
 
-    self.AnnouncementUi:ShowAnnouncement(playerName, level, challengeID, "death")
+    self.AnnouncementUi:ShowAnnouncement(playerName, nil, level, challengeID, "death")
+end
+
+function addonTable:OnRemoteDuelLoss(playerName, challengerName,level, challengeID, eventID, sender)
+    if self.ProcessedEvents[eventID] then
+        return
+    end
+
+    self.ProcessedEvents[eventID] = true
+
+    self.AnnouncementUi:ShowAnnouncement(playerName, challengerName, level, challengeID, "duel")
+end
+
+function addonTable.handleDuelResult(message)
+    local firstName, lastName = UnitName("player")
+    local fullName = firstName .. " " .. lastName
+
+    local winner, loser = message:match(addonTable.patternKnockout)
+
+    if winner and loser then
+        if winner == fullName then
+            print("Duell-Ergebnis: Du hast GEWONNEN gegen " .. loser .. "!")
+        elseif loser == fullName then
+            addonTable:OnLocalDuelLoss(winner, loser)
+        end
+        return
+    end
+
+    local fleer, pursuer = message:match(addonTable.patternRetreat)
+
+    if fleer and pursuer then
+        if pursuer == fullName then
+            print("Duell-Ergebnis: Du hast GEWONNEN, weil " .. fleer .. " abgehauen ist!")
+        elseif fleer == fullName then
+            addonTable:OnLocalDuelLoss(winner, loser)
+        end
+        return
+    end
 end
 
 -- shows optional help message when the addon is loaded
@@ -162,7 +219,7 @@ SlashCmdList["LEVELROULETTE"] = function(message)
         local challengeMessage = challengeID and (" und Challenge-ID " .. tostring(challengeID)) or ""
         print("|cff2674cc[L|cffff0000i|rDL Roulette]|r Test-Meldung für " .. playerName .. " mit Level " .. tostring(level) .. challengeMessage)
 
-        addonTable.AnnouncementUi:ShowAnnouncement(playerName, level, challengeID, "levelup")
+        addonTable.AnnouncementUi:ShowAnnouncement(playerName, nil, level, challengeID, "levelup")
         return
     end
 
