@@ -47,19 +47,17 @@ end
 
 -- creates a unique event ID based on the player's name, current timestamp, and a random number
 function addonTable:CreateEventID()
-    local playerName = UnitName("player") or "Unknown"
+    local firstName, lastName = UnitName("player")
+    local fullName = firstName .. " " .. lastName
     local timestamp = time()
     local randomNumber = math.random(100000, 999999)
 
-    return string.format("%s-%d-%d", playerName, timestamp, randomNumber)
+    return string.format("%s-%d-%d", fullName, timestamp, randomNumber)
 end
 
 function addonTable:OnLocalLevelUp(level)
-    local playerName = UnitName("player")
-
-    if not playerName then
-        return
-    end
+    local firstName, lastName = UnitName("player")
+    local fullName = firstName .. " " .. lastName
 
     local eventID = self:CreateEventID()
     local challengeID
@@ -67,25 +65,22 @@ function addonTable:OnLocalLevelUp(level)
         challengeID = self.Roulette:Roll()
     end
 
-    print("|cff2674cc[L|cffff0000i|rDL Roulette]|r " .. playerName ..
+    print("|cff2674cc[L|cffff0000i|rDL Roulette]|r " .. fullName ..
         " ist jetzt Level " .. tostring(level) .. "!")
     if challengeID then
-        self.ChallengeRouletteUi:ShowChallenge(playerName, level, challengeID, "levelup")
+        self.ChallengeRouletteUi:ShowChallenge(fullName, level, challengeID, "levelup")
     end
 
     self.ProcessedEvents[eventID] = true
     
     C_Timer.After(3, function() 
-        self.Communication:SendLevelUp(playerName, level, challengeID, eventID)
+        self.Communication:SendLevelUp(fullName, level, challengeID, eventID)
     end)
 end
 
 function addonTable:OnLocalDeath()
-    local playerName = UnitName("player")
-
-    if not playerName then
-        return
-    end
+    local firstName, lastName = UnitName("player")
+    local fullName = firstName .. " " .. lastName
 
     local playerLevel = UnitLevel("player") or 1
 
@@ -96,14 +91,14 @@ function addonTable:OnLocalDeath()
     end
 
     if challengeID then
-        print("|cff2674cc[L|cffff0000i|rDL Roulette]|r " .. playerName .. " ist mit Level " .. tostring(playerLevel) .. " gestorben.")
-        self.ChallengeRouletteUi:ShowChallenge(playerName, playerLevel, challengeID, "death")
+        print("|cff2674cc[L|cffff0000i|rDL Roulette]|r " .. fullName .. " ist mit Level " .. tostring(playerLevel) .. " gestorben.")
+        self.ChallengeRouletteUi:ShowChallenge(fullName, playerLevel, challengeID, "death")
     end
 
     self.ProcessedEvents[eventID] = true
     
     C_Timer.After(3, function() 
-        self.Communication:SendDeath(playerName, playerLevel, challengeID, eventID)
+        self.Communication:SendDeath(fullName, playerLevel, challengeID, eventID)
     end)
     
 end
@@ -210,16 +205,17 @@ SlashCmdList["LEVELROULETTE"] = function(message)
     end
 
     if message == "test1" then
-        local playerName = UnitName("player") or "Testspieler"
+        local firstName, lastName = UnitName("player")
+        local fullName = firstName .. " " .. lastName
         local level = UnitLevel("player") or 1
         local challengeID
         if LidlRouletteDB.settings.isRouletteEnabled == true then
             challengeID = addonTable.Roulette:Roll()
         end
         local challengeMessage = challengeID and (" und Challenge-ID " .. tostring(challengeID)) or ""
-        print("|cff2674cc[L|cffff0000i|rDL Roulette]|r Test-Meldung für " .. playerName .. " mit Level " .. tostring(level) .. challengeMessage)
+        print("|cff2674cc[L|cffff0000i|rDL Roulette]|r Test-Meldung für " .. fullName .. " mit Level " .. tostring(level) .. challengeMessage)
 
-        addonTable.AnnouncementUi:ShowAnnouncement(playerName, nil, level, challengeID, "levelup")
+        addonTable.AnnouncementUi:ShowAnnouncement(fullName, nil, level, challengeID, "levelup")
         return
     end
 
