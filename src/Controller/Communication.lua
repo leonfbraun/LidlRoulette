@@ -151,7 +151,6 @@ function Communication:OnMessageReceived(prefix, message, channel, sender)
     elseif command == "DEATH" then
         addonTable:OnRemoteDeath(playerName, playerLevel, playerChallengeID, eventID, sender)
     elseif command == "DUEL" then
-        addonTable:OnRemoteDuelLoss(playerName, challengerName, level, challengeID, eventID, sender)
+        addonTable:OnRemoteDuelLoss(playerName, challengerName, level, playerChallengeID, eventID, sender)
     end
-
 end

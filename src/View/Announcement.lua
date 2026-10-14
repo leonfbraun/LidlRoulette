@@ -55,7 +55,7 @@ function AnnouncementUi:ShowAnnouncement(playerName, challengerName, level, chal
     elseif reason == "levelup" then
         announcementMessage = "Ding, Level Up! |cffffffff" .. playerName .. "|r ist jetzt Level " .. tostring(level)
     elseif reason == "duel" then
-        announcementMessage = "|cffffffff" .. playerName .. "|r hat ein Duell gegen " .. challengerName .. "verloren"
+        announcementMessage = "|cffffffff" .. playerName .. "|r hat ein Duell gegen " .. challengerName .. " verloren"
     else
         return
     end

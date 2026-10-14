@@ -147,7 +147,7 @@ function addonTable:OnRemoteDeath(playerName, level, challengeID, eventID, sende
     self.AnnouncementUi:ShowAnnouncement(playerName, nil, level, challengeID, "death")
 end
 
-function addonTable:OnRemoteDuelLoss(playerName, challengerName,level, challengeID, eventID, sender)
+function addonTable:OnRemoteDuelLoss(playerName, challengerName, level, challengeID, eventID, sender)
     if self.ProcessedEvents[eventID] then
         return
     end
