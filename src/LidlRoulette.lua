@@ -41,6 +41,7 @@ function addonTable:Initialize()
 
     self.ChallengeRouletteUi:Initialize()
     self.AnnouncementUi:Initialize()
+    self.Roulette.InitializeRarityPools()
     self:PrintHelp()
 
 end
@@ -62,7 +63,7 @@ function addonTable:OnLocalLevelUp(level)
     local eventID = self:CreateEventID()
     local challengeID
     if LidlRouletteDB.settings.isRouletteEnabled == true then
-        challengeID = self.Roulette:Roll()
+        challengeID = self.Roulette.Roll()
     end
 
     print("|cff2674cc[L|cffff0000i|rDL Roulette]|r " .. fullName ..
@@ -87,7 +88,7 @@ function addonTable:OnLocalDeath()
     local eventID = self:CreateEventID()
     local challengeID
     if LidlRouletteDB.settings.isRouletteEnabled == true then
-        challengeID = self.Roulette:Roll()
+        challengeID = self.Roulette.Roll()
     end
 
     if challengeID then
@@ -109,7 +110,7 @@ function addonTable:OnLocalDuelLoss(winnerName, loserName)
     local eventID = self:CreateEventID()
     local challengeID
     if LidlRouletteDB.settings.isRouletteEnabled == true then
-        challengeID = self.Roulette:Roll()
+        challengeID = self.Roulette.Roll()
     end
 
     print("|cff2674cc[L|cffff0000i|rDL Roulette]|r " .. winnerName ..
@@ -210,7 +211,7 @@ SlashCmdList["LEVELROULETTE"] = function(message)
         local level = UnitLevel("player") or 1
         local challengeID
         if LidlRouletteDB.settings.isRouletteEnabled == true then
-            challengeID = addonTable.Roulette:Roll()
+            challengeID = addonTable.Roulette.Roll()
         end
         local challengeMessage = challengeID and (" und Challenge-ID " .. tostring(challengeID)) or ""
         print("|cff2674cc[L|cffff0000i|rDL Roulette]|r Test-Meldung für " .. fullName .. " mit Level " .. tostring(level) .. challengeMessage)

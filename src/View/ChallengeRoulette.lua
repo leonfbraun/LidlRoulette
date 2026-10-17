@@ -128,7 +128,7 @@ function ChallengeRouletteUi:UpdateAnimation(elapsed)
     if self.animationAccumulator >= self.animationInterval then
         self.animationAccumulator = 0
 
-        local randomID = addonTable.Roulette:Roll()
+        local randomID = addonTable.Roulette.Roll()
         local challenge = addonTable.Roulette:GetChallenge(randomID)
 
         if challenge then

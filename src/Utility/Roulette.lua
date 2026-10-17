@@ -7,15 +7,49 @@ function Roulette:GetChallengeCount()
     return #addonTable.Challenges
 end
 
-function Roulette:Roll()
-    local count = self:GetChallengeCount()
+local pools = {}
 
-    if count == 0 then
-        print("|cffff0000[Lidll Roulette]|r Es sind keine Challenges vorhanden.")
+function Roulette.InitializeRarityPools()
+    for challengeID, challenge in ipairs(addonTable.Challenges) do
+        local r = challenge.rarity
+        pools[r] = pools[r] or {}
+        table.insert(pools[r], challengeID)
+    end
+end
+
+
+local function RollRarity(challengePools)
+    local total = 0
+    for _, entry in ipairs(addonTable.RarityWeights) do
+        if challengePools[entry.rarity] and #challengePools[entry.rarity] > 0 then
+            total = total + entry.weight
+        end
+    end
+
+    if total == 0 then
         return nil
     end
 
-    return math.random(1, count)
+    local roll = math.random() * total
+
+    local cumulative = 0
+    for _, entry in ipairs(addonTable.RarityWeights) do
+        if challengePools[entry.rarity] and #challengePools[entry.rarity] > 0 then
+            cumulative = cumulative + entry.weight
+        end
+        if roll < cumulative then
+            return entry.rarity
+        end
+    end
+    return nil
+end
+
+function Roulette.Roll()
+    local rarity = RollRarity(pools)
+
+    local pool = pools[rarity]
+
+    return pool[math.random(#pool)]
 end
 
 function Roulette:GetChallenge(id)
@@ -28,11 +62,11 @@ end
 
 function Roulette.GetRarityColor(rarity)
     local colors = {
-        common = { 1, 1, 1 },
-        uncommon = { 0.12, 1, 0 },
-        rare = { 0, 0.44, 0.87 },
-        epic = { 0.64, 0.21, 0.93 },
-        legendary = { 1, 0.5, 0 },
+        Common = { 1, 1, 1 },
+        Uncommon = { 0.12, 1, 0 },
+        Rare = { 0, 0.44, 0.87 },
+        Epic = { 0.64, 0.21, 0.93 },
+        Legendary = { 1, 0.5, 0 },
     }
 
     return colors[rarity] or { 1, 1, 1 } 
@@ -40,11 +74,11 @@ end
 
 function Roulette.GetRarityColorHexCode(rarity)
     local colors = {
-        common = { 1, 1, 1 },
-        uncommon = { 0.12, 1, 0 },
-        rare = { 0, 0.44, 0.87 },
-        epic = { 0.64, 0.21, 0.93 },
-        legendary = { 1, 0.5, 0 },
+        Common = { 1, 1, 1 },
+        Uncommon = { 0.12, 1, 0 },
+        Rare = { 0, 0.44, 0.87 },
+        Epic = { 0.64, 0.21, 0.93 },
+        Legendary = { 1, 0.5, 0 },
     }
 
     local selectedColor = colors[rarity] or { 1, 1, 1 }
