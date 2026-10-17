@@ -41,7 +41,6 @@ function addonTable:Initialize()
 
     self.ChallengeRouletteUi:Initialize()
     self.AnnouncementUi:Initialize()
-    self.Roulette.InitializeRarityPools()
     self:PrintHelp()
 
 end
@@ -88,7 +87,7 @@ function addonTable:OnLocalDeath()
     local eventID = self:CreateEventID()
     local challengeID
     if LidlRouletteDB.settings.isRouletteEnabled == true then
-        challengeID = self.Roulette.Roll()
+        challengeID = self.Roulette.Roll("death")
     end
 
     if challengeID then
@@ -110,7 +109,7 @@ function addonTable:OnLocalDuelLoss(winnerName, loserName)
     local eventID = self:CreateEventID()
     local challengeID
     if LidlRouletteDB.settings.isRouletteEnabled == true then
-        challengeID = self.Roulette.Roll()
+        challengeID = self.Roulette.Roll("duel")
     end
 
     print("|cff2674cc[L|cffff0000i|rDL Roulette]|r " .. winnerName ..

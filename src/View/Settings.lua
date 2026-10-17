@@ -14,7 +14,7 @@ local function CreatePanelHeading()
 
     local description = SettingsUi.panel:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
     description:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -8)
-    description:SetText("Passe die möglichen Challenges an, die du erhalten kannst.")
+    description:SetText("Aktiviere/ deaktiviere das Challenge Roulette")
 end
 
 local function CreateEnableRouletteCheckbox()
@@ -32,16 +32,15 @@ local function CreateEnableRouletteCheckbox()
         print("|cff2674cc[L|cffff0000i|rDL Roulette]|r Roulette " .. (isChecked and "aktiviert" or "deaktiviert"))
     end)
 
-    SettingsUi.panel:SetScript("OnShow", function()
-        checkbox:SetChecked(LidlRouletteDB.settings.isRouletteEnabled)
-    end)
-
     table.insert(SettingsUi.panel.checkboxes, checkbox)
-    
 end
 
 CreatePanelHeading()
 CreateEnableRouletteCheckbox()
+
+SettingsUi.panel:SetScript("OnShow", function()
+    SettingsUi.panel.checkboxes[1]:SetChecked(LidlRouletteDB.settings.isRouletteEnabled)
+end)
 
 local settingsCategory
 local function OpenSettings()

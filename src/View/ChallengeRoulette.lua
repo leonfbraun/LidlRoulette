@@ -107,6 +107,7 @@ function ChallengeRouletteUi:ShowChallenge(playerName, level, challengeID, chall
     descriptionText:SetText("")
 
     self.targetChallengeID = challengeID
+    self.challengeReason = challengeReason
     self.animationElapsed = 0
     self.animationDuration = 2.5
     self.animationAccumulator = 0
@@ -128,7 +129,7 @@ function ChallengeRouletteUi:UpdateAnimation(elapsed)
     if self.animationAccumulator >= self.animationInterval then
         self.animationAccumulator = 0
 
-        local randomID = addonTable.Roulette.Roll()
+        local randomID = addonTable.Roulette.Roll(self.challengeReason)
         local challenge = addonTable.Roulette:GetChallenge(randomID)
 
         if challenge then

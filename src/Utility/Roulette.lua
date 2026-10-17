@@ -7,16 +7,27 @@ function Roulette:GetChallengeCount()
     return #addonTable.Challenges
 end
 
-local pools = {}
-
-function Roulette.InitializeRarityPools()
-    for challengeID, challenge in ipairs(addonTable.Challenges) do
-        local r = challenge.rarity
-        pools[r] = pools[r] or {}
-        table.insert(pools[r], challengeID)
+local function HasTag(challenge, tag)
+    for _, challengeTag in ipairs(challenge.tags or {}) do
+        if challengeTag == tag then
+            return true
+        end
     end
+    return false
 end
 
+local function BuildRarityPools(reason)
+    local challengePools = {}
+    for challengeID, challenge in ipairs(addonTable.Challenges) do
+        if not ((reason == "death" or reason == "duel") and HasTag(challenge, "Positiv")) then
+            local rarity = challenge.rarity
+            challengePools[rarity] = challengePools[rarity] or {}
+            table.insert(challengePools[rarity], challengeID)
+        end
+    end
+
+    return challengePools
+end
 
 local function RollRarity(challengePools)
     local total = 0
@@ -44,10 +55,14 @@ local function RollRarity(challengePools)
     return nil
 end
 
-function Roulette.Roll()
-    local rarity = RollRarity(pools)
+function Roulette.Roll(reason)
+    local challengePools = BuildRarityPools(reason)
+    local rarity = RollRarity(challengePools)
+    if not rarity then
+        return nil
+    end
 
-    local pool = pools[rarity]
+    local pool = challengePools[rarity]
 
     return pool[math.random(#pool)]
 end
