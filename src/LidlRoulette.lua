@@ -19,6 +19,10 @@ local function EnsureSavedSettings()
     if LidlRouletteDB.settings.isRouletteEnabled == nil then
         LidlRouletteDB.settings.isRouletteEnabled = true
     end
+
+    if LidlRouletteDB.settings.areClankerChallengesEnabled == nil then
+        LidlRouletteDB.settings.areClankerChallengesEnabled = true
+    end
 end
 
 EnsureSavedSettings()
