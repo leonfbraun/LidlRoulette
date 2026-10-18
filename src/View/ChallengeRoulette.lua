@@ -58,6 +58,10 @@ function ChallengeRouletteUi:Initialize()
     closeButton:SetPoint("BOTTOM", frame, "BOTTOM", 0, 15)
     closeButton:SetText("Los!")
     closeButton:SetScript("OnClick", function()
+        local challenge = addonTable.Roulette.GetChallenge(ChallengeRouletteUi.targetChallengeID)
+        if challenge and type(challenge.timeInSeconds) == "number" and challenge.timeInSeconds > 0 then
+            addonTable.TimerUi.StartChallengeTimer(ChallengeRouletteUi.targetChallengeID)
+        end
         frame:Hide()
         closeButton:Hide()
     end)

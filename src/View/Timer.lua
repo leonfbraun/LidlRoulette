@@ -79,10 +79,6 @@ local timerFrame
 
 function TimerUi.StartChallengeTimer(challengeID)
     local challenge = addonTable.Roulette.GetChallenge(challengeID)
-    if not challenge or type(challenge.timeInSeconds) ~= "number" or challenge.timeInSeconds <= 0 then
-        print("|cffff0000[Lidl Roulette]|r Timer kann für diese Challenge nicht gestartet werden.")
-        return
-    end
 
     timerFrame = timerFrame or CreateTimerFrame()
 
