@@ -150,6 +150,7 @@ local popupStyles = {
         detail = { 0.25, 0.25, 0.25, 1 },
     },
 }
+local popupFont = "Fonts\\ARIALN.TTF"
 
 local function ScheduleNextPopup()
     if challengeActive then
@@ -189,12 +190,14 @@ local function CreatePopup()
     popupFrame.browserAddress:SetPoint("LEFT", browserAddressBar, "LEFT", 8, 0)
     popupFrame.browserAddress:SetPoint("RIGHT", browserAddressBar, "RIGHT", -8, 0)
     popupFrame.browserAddress:SetJustifyH("LEFT")
+    popupFrame.browserAddress:SetFont(popupFont, 11)
     popupFrame.browserAddress:SetText("http://totally-safe.example.invalid")
 
     popupFrame.title = popupFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     popupFrame.title:SetPoint("LEFT", titleBar, "LEFT", 12, 0)
     popupFrame.title:SetPoint("RIGHT", titleBar, "RIGHT", -38, 0)
     popupFrame.title:SetJustifyH("LEFT")
+    popupFrame.title:SetFont(popupFont, 16)
 
     popupFrame.message = popupFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     popupFrame.message:SetPoint("TOPLEFT", popupFrame, "TOPLEFT", 26, -86)
@@ -202,17 +205,19 @@ local function CreatePopup()
     popupFrame.message:SetJustifyH("CENTER")
     popupFrame.message:SetJustifyV("MIDDLE")
     popupFrame.message:SetWordWrap(true)
+    popupFrame.message:SetFont(popupFont, 14)
 
     popupFrame.detail = popupFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     popupFrame.detail:SetPoint("TOPLEFT", popupFrame.message, "BOTTOMLEFT", 0, -10)
     popupFrame.detail:SetPoint("TOPRIGHT", popupFrame.message, "BOTTOMRIGHT", 0, -10)
     popupFrame.detail:SetJustifyH("CENTER")
     popupFrame.detail:SetWordWrap(true)
+    popupFrame.detail:SetFont(popupFont, 12)
 
     popupFrame.terminalText = popupFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     popupFrame.terminalText:SetPoint("TOPLEFT", popupFrame, "TOPLEFT", 22, -62)
     popupFrame.terminalText:SetPoint("BOTTOMRIGHT", popupFrame, "BOTTOMRIGHT", -22, 30)
-    popupFrame.terminalText:SetFont("Fonts\\ARIALN.TTF", 14, "OUTLINE")
+    popupFrame.terminalText:SetFont(popupFont, 14)
     popupFrame.terminalText:SetJustifyH("LEFT")
     popupFrame.terminalText:SetJustifyV("TOP")
     popupFrame.terminalText:SetWordWrap(true)
@@ -232,6 +237,7 @@ local function CreatePopup()
 
     popupFrame.progressText = popupFrame.progressBar:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     popupFrame.progressText:SetPoint("CENTER", popupFrame.progressBar, "CENTER")
+    popupFrame.progressText:SetFont(popupFont, 12)
     popupFrame.progressBar:Hide()
 
     popupFrame.closeButton = CreateFrame("Button", nil, popupFrame, "UIPanelCloseButton")
@@ -253,6 +259,7 @@ local function CreatePopup()
     popupFrame.actionButton = CreateFrame("Button", nil, popupFrame, "UIPanelButtonTemplate")
     popupFrame.actionButton:SetSize(160, 26)
     popupFrame.actionButton:SetPoint("BOTTOMRIGHT", popupFrame, "BOTTOMRIGHT", -22, 14)
+    popupFrame.actionButton:GetFontString():SetFont(popupFont, 12)
     popupFrame.actionButton:Hide()
 
     popupFrame:Hide()
