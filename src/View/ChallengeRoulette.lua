@@ -9,6 +9,7 @@ local playerText
 local rarityText
 local descriptionText
 local wheelText
+local closeButton
 
 local animationRunning = false
 
@@ -52,14 +53,16 @@ function ChallengeRouletteUi:Initialize()
     descriptionText:SetWidth(400)
     descriptionText:SetJustifyH("CENTER")
 
-    local closeButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+    closeButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
     closeButton:SetSize(100, 25)
     closeButton:SetPoint("BOTTOM", frame, "BOTTOM", 0, 15)
-    closeButton:SetText("Schließen")
+    closeButton:SetText("Los!")
     closeButton:SetScript("OnClick", function()
         frame:Hide()
+        closeButton:Hide()
     end)
 
+    closeButton:Hide()
     frame:EnableMouse(true)
     frame:SetMovable(true)
     frame:RegisterForDrag("LeftButton")
@@ -159,6 +162,7 @@ function ChallengeRouletteUi:FinishAnimation()
     rarityText:SetTextColor(rarityColor[1], rarityColor[2], rarityColor[3])
     descriptionText:SetText(challenge.description)
     PlaySound(8960)
+    closeButton:Show()
 
     local rarityColorCode = addonTable.Roulette.GetRarityColorHexCode(challenge.rarity)
     local challengeTitle = "Challenge: |cff" .. rarityColorCode .. "[" .. challenge.title .. "]|r"

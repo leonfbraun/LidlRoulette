@@ -39,7 +39,7 @@ function addonTable:Initialize()
     end
     self.Events:RegisterCommunicationEvents()
 
-    self.TimerUi.StartChallengeTimer(1)
+    self.TimerUi.StartChallengeTimer(2)
     self.ChallengeRouletteUi:Initialize()
     self.AnnouncementUi:Initialize()
     self:PrintHelp()
