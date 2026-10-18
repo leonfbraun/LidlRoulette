@@ -66,7 +66,7 @@ local function GetActionButtonBindings()
 
             for keyIndex = 1, 2 do
                 local key = keyIndex == 1 and firstKey or secondKey
-                if IsBindingKey(key) then
+                if key ~= nil and IsBindingKey(key) then
                     if actionsByKey[key] and actionsByKey[key] ~= buttonNumber then
                         return nil, "Die Taste " .. key .. " ist mehreren Action Buttons zugewiesen."
                     end
