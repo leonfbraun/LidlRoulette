@@ -80,7 +80,7 @@ function ChallengeRouletteUi:Initialize()
 end
 
 function ChallengeRouletteUi:ShowChallenge(playerName, level, challengeID, challengeReason)
-    local challenge = addonTable.Roulette:GetChallenge(challengeID)
+    local challenge = addonTable.Roulette.GetChallenge(challengeID)
 
     if not challenge then
         print("|cffff0000[Lidl Roulette]|r Unbekannte Challenge-ID: " ..
@@ -130,7 +130,7 @@ function ChallengeRouletteUi:UpdateAnimation(elapsed)
         self.animationAccumulator = 0
 
         local randomID = addonTable.Roulette.Roll(self.challengeReason)
-        local challenge = addonTable.Roulette:GetChallenge(randomID)
+        local challenge = addonTable.Roulette.GetChallenge(randomID)
 
         if challenge then
             wheelText:SetText("[" .. challenge.title .. "]")
@@ -145,7 +145,7 @@ function ChallengeRouletteUi:UpdateAnimation(elapsed)
 end
 
 function ChallengeRouletteUi:FinishAnimation()
-    local challenge = addonTable.Roulette:GetChallenge(self.targetChallengeID)
+    local challenge = addonTable.Roulette.GetChallenge(self.targetChallengeID)
 
     if not challenge then
         return

@@ -3,7 +3,7 @@ local addonName, addonTable = ...
 addonTable.Roulette = {}
 local Roulette = addonTable.Roulette
 
-function Roulette:GetChallengeCount()
+function Roulette.GetChallengeCount()
     return #addonTable.Challenges
 end
 
@@ -67,7 +67,7 @@ function Roulette.Roll(reason)
     return pool[math.random(#pool)]
 end
 
-function Roulette:GetChallenge(id)
+function Roulette.GetChallenge(id)
     if not id then
         return nil
     end

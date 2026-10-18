@@ -64,7 +64,7 @@ function AnnouncementUi:ShowAnnouncement(playerName, challengerName, level, chal
     print("|cff2674cc[L|cffff0000i|rDL Roulette]|r " .. announcementMessage)
 
     if(challengeID) then
-        local challenge = addonTable.Roulette:GetChallenge(challengeID)
+        local challenge = addonTable.Roulette.GetChallenge(challengeID)
         local rarityColorCode = addonTable.Roulette.GetRarityColorHexCode(challenge.rarity)
         local challengeTitle = "Challenge: |cff" .. rarityColorCode .. "[" .. challenge.title .. "]|r"
 
