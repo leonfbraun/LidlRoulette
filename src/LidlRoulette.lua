@@ -181,6 +181,7 @@ function addonTable:PrintHelp()
     print("|cff2674cc[L|cffff0000i|rDL Roulette]|r Verfügbare Befehle:")
     print("|cff2674cc/lidl test|r - Zeigt eine Test-Challenge an.")
     print("|cff2674cc/lidl test1|r - Zeigt eine Test-Meldung an.")
+    print("|cff2674cc/lidl challenge <ID>|r - Zeigt eine bestimmte Challenge zum Testen an.")
     print("|cff2674cc/lidl challenges|r - Listet alle verfügbaren Challenges auf.")
 end
 
@@ -214,6 +215,25 @@ SlashCmdList["LEVELROULETTE"] = function(message)
         for id, challenge in ipairs(addonTable.Challenges) do
             print("|cff2674cc" .. tostring(id) .. ".|r " .. challenge.title)
         end
+        return
+    end
+
+    local challengeID = message:match("^challenge%s+(%d+)$")
+    if challengeID then
+        challengeID = tonumber(challengeID)
+        local challenge = addonTable.Roulette.GetChallenge(challengeID)
+        if not challenge then
+            print("|cffff0000[Lidl Roulette]|r Unbekannte Challenge-ID: " .. tostring(challengeID))
+            return
+        end
+
+        local firstName, lastName = UnitName("player")
+        local fullName = firstName .. " " .. lastName
+        local level = UnitLevel("player") or 1
+        addonTable.ChallengeRouletteUi:ShowChallenge(fullName, level, challengeID, "test")
+        return
+    elseif message:match("^challenge") then
+        print("|cff2674cc[L|cffff0000i|rDL Roulette]|r Verwendung: /lidl challenge <ID>")
         return
     end
 

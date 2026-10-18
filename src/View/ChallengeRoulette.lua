@@ -107,6 +107,9 @@ function ChallengeRouletteUi:ShowChallenge(playerName, level, challengeID, chall
     elseif challengeReason == "duel" then 
         titleText:SetText("Duell verloren :(")
         playerText:SetText(playerName .. " wurde mit Level " ..  tostring(level) .. " im Duell besiegt")
+    elseif challengeReason == "test" then
+        titleText:SetText("CHALLENGE-TEST")
+        playerText:SetText("Test für Challenge-ID " .. tostring(challengeID))
     end
     
     wheelText:SetText("● ● ●")

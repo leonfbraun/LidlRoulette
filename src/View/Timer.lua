@@ -4,6 +4,8 @@ addonTable.TimerUi = {}
 
 local TimerUi = addonTable.TimerUi
 
+local timerFrame
+
 local function CreateTimerFrame()
     local TimerFrame = CreateFrame("Frame", "MyChallengeTimerFrame", UIParent, "BackdropTemplate")
     TimerFrame:SetSize(280, 115)
@@ -75,8 +77,6 @@ local function CreateTimerFrame()
     return TimerFrame
 end
 
-local timerFrame
-
 local function EndChallengeTimer(command)
     if not timerFrame or not timerFrame.challengeID then
         return
@@ -86,6 +86,8 @@ local function EndChallengeTimer(command)
     timerFrame.challengeID = nil
     timerFrame:SetScript("OnUpdate", nil)
     timerFrame:Hide()
+    addonTable.Keybindings.Stop()
+    addonTable.PopupChallengeUi.Stop()
     addonTable:OnLocalTimerEvent(challengeID, command)
 end
 
@@ -93,6 +95,9 @@ function TimerUi.StartChallengeTimer(challengeID)
     local challenge = addonTable.Roulette.GetChallenge(challengeID)
 
     timerFrame = timerFrame or CreateTimerFrame()
+    if timerFrame.challengeID then
+        EndChallengeTimer("TIMERCANCELED")
+    end
     timerFrame.challengeID = challengeID
 
     local duration = challenge.timeInSeconds
@@ -111,6 +116,7 @@ function TimerUi.StartChallengeTimer(challengeID)
         if paused then
             startTime = GetTime() - (duration - remaining)
             paused = false
+            addonTable.PopupChallengeUi.Resume()
             self:SetText("Pause")
         else
             remaining = math.max(0, duration - (GetTime() - startTime))
@@ -119,6 +125,7 @@ function TimerUi.StartChallengeTimer(challengeID)
                 return
             end
             paused = true
+            addonTable.PopupChallengeUi.Pause()
             self:SetText("Fortsetzen")
         end
     end)
@@ -127,6 +134,12 @@ function TimerUi.StartChallengeTimer(challengeID)
     timerFrame.bar:SetValue(duration)
     timerFrame:Show()
 
+    if challenge.keybindingShuffle then
+        addonTable.Keybindings.Start(challenge.keybindingShuffle)
+    end
+    if challenge.popupChallenge then
+        addonTable.PopupChallengeUi.Start()
+    end
     timerFrame:SetScript("OnUpdate", function(self)
         if paused then
             return

@@ -8,10 +8,12 @@
 src/LidlRoulette.lua
 src/Model/Challenges.lua
 src/Utility/Roulette.lua
+src/Utility/Keybindings.lua
 src/Controller/Communication.lua
 src/Controller/Events.lua
 src/View/Announcement.lua
 src/View/ChallengeRoulette.lua
 src/View/Overview.lua
 src/View/Settings.lua
+src/View/PopupChallenge.lua
 src/View/Timer.lua
