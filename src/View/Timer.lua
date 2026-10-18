@@ -66,7 +66,7 @@ local function CreateTimerFrame()
     TimerFrame.closeButton = CreateFrame("Button", nil, TimerFrame, "UIPanelButtonTemplate")
     TimerFrame.closeButton:SetSize(100, 22)
     TimerFrame.closeButton:SetPoint("BOTTOMRIGHT", TimerFrame, "BOTTOMRIGHT", -18, 9)
-    TimerFrame.closeButton:SetText("Schließen")
+    TimerFrame.closeButton:SetText("Abbrechen")
     TimerFrame.closeButton:SetScript("OnClick", function()
         TimerUi.CancelChallengeTimer()
     end)
@@ -77,10 +77,23 @@ end
 
 local timerFrame
 
+local function EndChallengeTimer(command)
+    if not timerFrame or not timerFrame.challengeID then
+        return
+    end
+
+    local challengeID = timerFrame.challengeID
+    timerFrame.challengeID = nil
+    timerFrame:SetScript("OnUpdate", nil)
+    timerFrame:Hide()
+    addonTable:OnLocalTimerEvent(challengeID, command)
+end
+
 function TimerUi.StartChallengeTimer(challengeID)
     local challenge = addonTable.Roulette.GetChallenge(challengeID)
 
     timerFrame = timerFrame or CreateTimerFrame()
+    timerFrame.challengeID = challengeID
 
     local duration = challenge.timeInSeconds
 
@@ -102,7 +115,7 @@ function TimerUi.StartChallengeTimer(challengeID)
         else
             remaining = math.max(0, duration - (GetTime() - startTime))
             if remaining <= 0 then
-                TimerUi.CancelChallengeTimer()
+                EndChallengeTimer("TIMERFINISHED")
                 return
             end
             paused = true
@@ -121,8 +134,7 @@ function TimerUi.StartChallengeTimer(challengeID)
 
         remaining = duration - (GetTime() - startTime)
         if remaining <= 0 then
-            self:SetScript("OnUpdate", nil)
-            self:Hide()
+            EndChallengeTimer("TIMERFINISHED")
             return
         end
         self.bar:SetValue(remaining)
@@ -132,8 +144,5 @@ function TimerUi.StartChallengeTimer(challengeID)
 end
 
 function TimerUi.CancelChallengeTimer()
-    if timerFrame then
-        timerFrame:SetScript("OnUpdate", nil)
-        timerFrame:Hide()
-    end
+    EndChallengeTimer("TIMERCANCELED")
 end

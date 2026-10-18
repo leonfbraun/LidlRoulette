@@ -57,7 +57,9 @@ function AnnouncementUi:ShowAnnouncement(playerName, challengerName, level, chal
     elseif command == "DUEL" then
         announcementMessage = "|cffffffff" .. playerName .. "|r hat ein Duell gegen |cffffffff" .. challengerName .. "|r verloren"
     elseif command == "TIMERFINISHED" then
-        announcementMessage = "Der Timer für |cffffffff" .. playerName .. "|r's Challenge ist fertig!"
+        announcementMessage = "Der Timer von |cffffffff" .. playerName .. "|r's Challenge ist abgelaufen!"
+    elseif command == "TIMERCANCELED" then
+        announcementMessage = "|cffffffff" .. playerName .. "|r hat den Challenge-Timer abgebrochen."
     else
         return
     end

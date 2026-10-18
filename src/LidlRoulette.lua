@@ -126,6 +126,17 @@ function addonTable:OnLocalDuelLoss(winnerName, loserName)
     end)
 end
 
+function addonTable:OnLocalTimerEvent(challengeID, command)
+    local firstName, lastName = UnitName("player")
+    local fullName = firstName .. " " .. lastName
+    local playerLevel = UnitLevel("player") or 1
+    local eventID = self:CreateEventID()
+
+    self.ProcessedEvents[eventID] = true
+    self.AnnouncementUi:ShowAnnouncement(fullName, nil, playerLevel, challengeID, command)
+    self.Communication.SendMessage(command, fullName, playerLevel, challengeID, eventID)
+end
+
 function addonTable:OnRemoteEventRecieved(playerName, level, challengeID, eventID, challengerName, command)
     if self.ProcessedEvents[eventID] then
         return
