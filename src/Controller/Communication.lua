@@ -15,77 +15,10 @@ function Communication:Initialize()
     return true
 end
 
-function Communication:SendLevelUp(playerName, level, challengeID, eventID)
+function Communication.SendMessage(command, playerName, level, challengeID, eventID, challengerName)
     local message = string.format(
-        "LEVELUP|%s|%d|%s|%s",
-        playerName,
-        level,
-        challengeID and tostring(challengeID) or "-",
-        eventID
-    )
-
-    local partyMessageSuccess, partyMessageErrorMessage = C_ChatInfo.SendAddonMessage(
-        addonTable.PREFIX,
-        message,
-        "PARTY"
-    )
-
-    local guildMessageSuccess, guildMessageErrorMessage = C_ChatInfo.SendAddonMessage(
-        addonTable.PREFIX,
-        message,
-        "GUILD"
-    )
-
-    if partyMessageSuccess == false and guildMessageSuccess == false then
-        print("|cffff0000[Lidl Roulette]|r Nachricht konnte nicht gesendet werden.")
-
-        if partyMessageErrorMessage then
-            print("|cffff0000Fehler:|r " .. tostring(partyMessageErrorMessage))
-        end
-
-        if guildMessageErrorMessage then
-            print("|cffff0000Fehler:|r " .. tostring(guildMessageErrorMessage))
-        end
-    end
-end
-
-function Communication:SendDeath(playerName, level, challengeID, eventID)
-    local message = string.format(
-        "DEATH|%s|%d|%s|%s",
-        playerName,
-        level,
-        challengeID and tostring(challengeID) or "-",
-        eventID
-    )
-
-    local partyMessageSuccess, partyMessageErrorMessage = C_ChatInfo.SendAddonMessage(
-        addonTable.PREFIX,
-        message,
-        "PARTY"
-    )
-
-    local guildMessageSuccess, guildMessageErrorMessage = C_ChatInfo.SendAddonMessage(
-        addonTable.PREFIX,
-        message,
-        "GUILD"
-    )
-
-    if partyMessageSuccess == false and guildMessageSuccess == false then
-        print("|cffff0000[Lidl Roulette]|r Nachricht konnte nicht gesendet werden.")
-
-        if partyMessageErrorMessage then
-            print("|cffff0000Fehler:|r " .. tostring(partyMessageErrorMessage))
-        end
-
-        if guildMessageErrorMessage then
-            print("|cffff0000Fehler:|r " .. tostring(guildMessageErrorMessage))
-        end
-    end
-end
-
-function Communication:SendDuelLoss(playerName, challengerName,level, challengeID, eventID)
-    local message = string.format(
-        "DUEL|%s|%d|%s|%s|%s",
+        "%s|%s|%d|%s|%s|%s",
+        command,
         playerName,
         level,
         challengeID and tostring(challengeID) or "-",
@@ -118,8 +51,7 @@ function Communication:SendDuelLoss(playerName, challengerName,level, challengeI
     end
 end
 
-
-function Communication:OnMessageReceived(prefix, message, channel, sender)
+function Communication:OnMessageReceived(prefix, message, _, sender)
     if prefix ~= addonTable.PREFIX or not message then
         return
     end
@@ -127,7 +59,7 @@ function Communication:OnMessageReceived(prefix, message, channel, sender)
     local command, playerName, level, challengeID, eventID, challengerName =
         strsplit("|", message)
 
-    if command ~= "LEVELUP" and command ~= "DEATH" and command ~= "DUEL" then
+    if command ~= "LEVELUP" and command ~= "DEATH" and command ~= "DUEL" and command ~= "TIMERFINISHED" and command ~= "TIMERCANCELED" then
         return
     end
 
@@ -146,11 +78,12 @@ function Communication:OnMessageReceived(prefix, message, channel, sender)
         return
     end
 
-    if command == "LEVELUP" then
-        addonTable:OnRemoteLevelUp(playerName, playerLevel, playerChallengeID, eventID, sender)
-    elseif command == "DEATH" then
-        addonTable:OnRemoteDeath(playerName, playerLevel, playerChallengeID, eventID, sender)
-    elseif command == "DUEL" then
-        addonTable:OnRemoteDuelLoss(playerName, challengerName, level, playerChallengeID, eventID, sender)
-    end
+    addonTable:OnRemoteEventRecieved(
+        playerName,
+        playerLevel,
+        playerChallengeID,
+        eventID,
+        challengerName ~= "-" and challengerName or nil,
+        command
+    )
 end

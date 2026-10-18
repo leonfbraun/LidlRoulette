@@ -7,7 +7,7 @@ local TimerUi = addonTable.TimerUi
 local function CreateTimerFrame()
     local TimerFrame = CreateFrame("Frame", "MyChallengeTimerFrame", UIParent, "BackdropTemplate")
     TimerFrame:SetSize(280, 115)
-    TimerFrame:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", -350, -150)
+    TimerFrame:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", -300, -50)
     TimerFrame:SetBackdrop({
         bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
         edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",

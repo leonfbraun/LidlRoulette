@@ -27,7 +27,6 @@ local savedVariablesFrame = CreateFrame("Frame")
 savedVariablesFrame:RegisterEvent("ADDON_LOADED")
 savedVariablesFrame:SetScript("OnEvent", function(self, _, loadedAddonName)
     if loadedAddonName == addonName then
-        -- Recheck after WoW has loaded this addon's SavedVariables.
         EnsureSavedSettings()
         self:UnregisterEvent("ADDON_LOADED")
     end
@@ -38,8 +37,6 @@ function addonTable:Initialize()
         return
     end
     self.Events:RegisterCommunicationEvents()
-
-    self.TimerUi.StartChallengeTimer(2)
     self.ChallengeRouletteUi:Initialize()
     self.AnnouncementUi:Initialize()
     self:PrintHelp()
@@ -56,7 +53,7 @@ function addonTable:CreateEventID()
     return string.format("%s-%d-%d", fullName, timestamp, randomNumber)
 end
 
-function addonTable:OnLocalLevelUp(level)
+function addonTable:OnLocalLevelUp(playerLevel)
     local firstName, lastName = UnitName("player")
     local fullName = firstName .. " " .. lastName
 
@@ -67,15 +64,16 @@ function addonTable:OnLocalLevelUp(level)
     end
 
     print("|cff2674cc[L|cffff0000i|rDL Roulette]|r " .. fullName ..
-        " ist jetzt Level " .. tostring(level) .. "!")
+        " ist jetzt Level " .. tostring(playerLevel) .. "!")
     if challengeID then
-        self.ChallengeRouletteUi:ShowChallenge(fullName, level, challengeID, "levelup")
+        self.ChallengeRouletteUi:ShowChallenge(fullName, playerLevel, challengeID, "levelup")
     end
 
     self.ProcessedEvents[eventID] = true
     
     C_Timer.After(3, function() 
-        self.Communication:SendLevelUp(fullName, level, challengeID, eventID)
+        local command = "LEVELUP"
+        self.Communication.SendMessage(command, fullName, playerLevel, challengeID, eventID)
     end)
 end
 
@@ -99,7 +97,8 @@ function addonTable:OnLocalDeath()
     self.ProcessedEvents[eventID] = true
     
     C_Timer.After(3, function() 
-        self.Communication:SendDeath(fullName, playerLevel, challengeID, eventID)
+        local command = "DEATH"
+        self.Communication.SendMessage(command, fullName, playerLevel, challengeID, eventID)
     end)
     
 end
@@ -122,41 +121,21 @@ function addonTable:OnLocalDuelLoss(winnerName, loserName)
     self.ProcessedEvents[eventID] = true
     
     C_Timer.After(3, function() 
-        self.Communication:SendDuelLoss(loserName, winnerName, playerLevel, challengeID, eventID)
+        local command = "DUEL"
+        self.Communication.SendMessage(command, loserName, playerLevel, challengeID, eventID, winnerName)
     end)
 end
 
--- handles remote levelUp (recieved from another player)
-function addonTable:OnRemoteLevelUp(playerName, level, challengeID, eventID, sender)
+function addonTable:OnRemoteEventRecieved(playerName, level, challengeID, eventID, challengerName, command)
     if self.ProcessedEvents[eventID] then
         return
     end
 
     self.ProcessedEvents[eventID] = true
 
-    self.AnnouncementUi:ShowAnnouncement(playerName, nil, level, challengeID, "levelup")
+    self.AnnouncementUi:ShowAnnouncement(playerName, challengerName, level, challengeID, command)
 end
 
--- handles remote death (recieved from another player)
-function addonTable:OnRemoteDeath(playerName, level, challengeID, eventID, sender)
-    if self.ProcessedEvents[eventID] then
-        return
-    end
-
-    self.ProcessedEvents[eventID] = true
-
-    self.AnnouncementUi:ShowAnnouncement(playerName, nil, level, challengeID, "death")
-end
-
-function addonTable:OnRemoteDuelLoss(playerName, challengerName, level, challengeID, eventID, sender)
-    if self.ProcessedEvents[eventID] then
-        return
-    end
-
-    self.ProcessedEvents[eventID] = true
-
-    self.AnnouncementUi:ShowAnnouncement(playerName, challengerName, level, challengeID, "duel")
-end
 
 function addonTable.handleDuelResult(message)
     local firstName, lastName = UnitName("player")
@@ -216,7 +195,7 @@ SlashCmdList["LEVELROULETTE"] = function(message)
         local challengeMessage = challengeID and (" und Challenge-ID " .. tostring(challengeID)) or ""
         print("|cff2674cc[L|cffff0000i|rDL Roulette]|r Test-Meldung für " .. fullName .. " mit Level " .. tostring(level) .. challengeMessage)
 
-        addonTable.AnnouncementUi:ShowAnnouncement(fullName, nil, level, challengeID, "levelup")
+        addonTable.AnnouncementUi:ShowAnnouncement(fullName, nil, level, challengeID, "LEVELUP")
         return
     end
 

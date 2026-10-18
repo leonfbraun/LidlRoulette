@@ -48,14 +48,16 @@ function AnnouncementUi:Initialize()
     announcementFrame:Hide()
 end
 
-function AnnouncementUi:ShowAnnouncement(playerName, challengerName, level, challengeID, reason)
+function AnnouncementUi:ShowAnnouncement(playerName, challengerName, level, challengeID, command)
     local announcementMessage
-    if reason == "death" then
+    if command == "DEATH" then
         announcementMessage = "|cffffffff" .. playerName .. "|r ist mit Level " .. tostring(level) .. " gestorben"
-    elseif reason == "levelup" then
+    elseif command == "LEVELUP" then
         announcementMessage = "Ding, Level Up! |cffffffff" .. playerName .. "|r ist jetzt Level " .. tostring(level)
-    elseif reason == "duel" then
-        announcementMessage = "|cffffffff" .. playerName .. "|r hat ein Duell gegen " .. challengerName .. " verloren"
+    elseif command == "DUEL" then
+        announcementMessage = "|cffffffff" .. playerName .. "|r hat ein Duell gegen |cffffffff" .. challengerName .. "|r verloren"
+    elseif command == "TIMERFINISHED" then
+        announcementMessage = "Der Timer für |cffffffff" .. playerName .. "|r's Challenge ist fertig!"
     else
         return
     end
