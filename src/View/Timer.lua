@@ -5,17 +5,48 @@ addonTable.TimerUi = {}
 local TimerUi = addonTable.TimerUi
 
 local timerFrame
+local timerBackdrop = {
+    bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
+    edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+    edgeSize = 12,
+    insets = { left = 3, right = 3, top = 3, bottom = 3 },
+}
+
+local function SetTimerMinimized(minimized)
+    timerFrame.isMinimized = minimized
+    if minimized then
+        timerFrame:SetSize(132, 46)
+        timerFrame.challengeName:Hide()
+        timerFrame.bar:Hide()
+        timerFrame.pauseButton:Hide()
+        timerFrame.closeButton:Hide()
+        timerFrame.barText:Hide()
+        timerFrame.compactText:Show()
+        timerFrame.compactText:ClearAllPoints()
+        timerFrame.compactText:SetPoint("CENTER", timerFrame, "CENTER", -9, 0)
+        timerFrame.modeButton:SetNormalTexture("Interface\\Buttons\\UI-PlusButton-Up")
+        timerFrame.modeButton:SetPushedTexture("Interface\\Buttons\\UI-PlusButton-Down")
+    else
+        timerFrame:SetSize(280, 115)
+        timerFrame:SetBackdrop(timerBackdrop)
+        timerFrame.challengeName:Show()
+        timerFrame.bar:Show()
+        timerFrame.pauseButton:Show()
+        timerFrame.closeButton:Show()
+        timerFrame.compactText:Hide()
+        timerFrame.barText:Show()
+        timerFrame.barText:ClearAllPoints()
+        timerFrame.barText:SetPoint("CENTER", timerFrame.bar)
+        timerFrame.modeButton:SetNormalTexture("Interface\\Buttons\\UI-MinusButton-Up")
+        timerFrame.modeButton:SetPushedTexture("Interface\\Buttons\\UI-MinusButton-Down")
+    end
+end
 
 local function CreateTimerFrame()
     local TimerFrame = CreateFrame("Frame", "MyChallengeTimerFrame", UIParent, "BackdropTemplate")
     TimerFrame:SetSize(280, 115)
     TimerFrame:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", -300, -50)
-    TimerFrame:SetBackdrop({
-        bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
-        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-        edgeSize = 12,
-        insets = { left = 3, right = 3, top = 3, bottom = 3 },
-    })
+    TimerFrame:SetBackdrop(timerBackdrop)
 
     TimerFrame:SetMovable(true)
     TimerFrame:EnableMouse(true)
@@ -57,8 +88,33 @@ local function CreateTimerFrame()
     TimerFrame.bar:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
     TimerFrame.bar:SetStatusBarColor(0.2, 0.7, 1)
 
-    TimerFrame.text = TimerFrame.bar:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-    TimerFrame.text:SetPoint("CENTER")
+    TimerFrame.barText = TimerFrame.bar:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    TimerFrame.barText:SetPoint("CENTER")
+    TimerFrame.barText:SetFont("Fonts\\FRIZQT__.TTF", 16, "OUTLINE")
+    TimerFrame.barText:SetJustifyH("CENTER")
+
+    TimerFrame.compactText = TimerFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    TimerFrame.compactText:SetPoint("CENTER", TimerFrame)
+    TimerFrame.compactText:SetFont("Fonts\\FRIZQT__.TTF", 16, "OUTLINE")
+    TimerFrame.compactText:SetJustifyH("CENTER")
+    TimerFrame.compactText:Hide()
+
+    TimerFrame.modeButton = CreateFrame("Button", nil, TimerFrame)
+    TimerFrame.modeButton:SetSize(18, 18)
+    TimerFrame.modeButton:SetPoint("TOPRIGHT", TimerFrame, "TOPRIGHT", -6, -5)
+    TimerFrame.modeButton:SetHighlightTexture("Interface\\Buttons\\UI-PlusButton-Hilight")
+    TimerFrame.modeButton:SetScript("OnClick", function()
+        SetTimerMinimized(not TimerFrame.isMinimized)
+    end)
+    TimerFrame.modeButton:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_TOP")
+        GameTooltip:ClearLines()
+        GameTooltip:AddLine(TimerFrame.isMinimized and "Vergrößern" or "Verkleinern", 1, 1, 1)
+        GameTooltip:Show()
+    end)
+    TimerFrame.modeButton:SetScript("OnLeave", function()
+        GameTooltip:Hide()
+    end)
 
     TimerFrame.pauseButton = CreateFrame("Button", nil, TimerFrame, "UIPanelButtonTemplate")
     TimerFrame.pauseButton:SetSize(100, 22)
@@ -98,6 +154,7 @@ function TimerUi.StartChallengeTimer(challengeID)
     if timerFrame.challengeID then
         EndChallengeTimer("TIMERCANCELED")
     end
+    SetTimerMinimized(false)
     timerFrame.challengeID = challengeID
 
     local duration = challenge.timeInSeconds
@@ -132,6 +189,10 @@ function TimerUi.StartChallengeTimer(challengeID)
 
     timerFrame.bar:SetMinMaxValues(0, duration)
     timerFrame.bar:SetValue(duration)
+    local initialSeconds = math.ceil(duration)
+    local initialTimeText = string.format("%d:%02d", math.floor(initialSeconds / 60), initialSeconds % 60)
+    timerFrame.barText:SetText(initialTimeText)
+    timerFrame.compactText:SetText(initialTimeText)
     timerFrame:Show()
 
     if challenge.keybindingShuffle then
@@ -152,7 +213,9 @@ function TimerUi.StartChallengeTimer(challengeID)
         end
         self.bar:SetValue(remaining)
         local totalSeconds = math.ceil(remaining)
-        self.text:SetText(string.format("%d:%02d", math.floor(totalSeconds / 60), totalSeconds % 60))
+        local timeText = string.format("%d:%02d", math.floor(totalSeconds / 60), totalSeconds % 60)
+        self.barText:SetText(timeText)
+        self.compactText:SetText(timeText)
     end)
 end
 
