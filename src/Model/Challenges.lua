@@ -21,8 +21,8 @@ addonTable.Challenges = {
     { rarity= "Common", tags={ "Negativ" }, title="Grindset", description="Steigere einen deiner Berufe um 5 Level" },
     { rarity= "Common", tags={ "Positiv" }, timeInSeconds=900, title="Lidl-DJ", description="Du bist jetzt für 15 Minuten DJ. Spiele mit dem Lidl Einkaufshits bot ein paar Banger ab"},
     { rarity= "Common", tags={ "Negativ", "Sport" }, title= "Get low", description="Mache 10 Bodyweight Squats, Full ROM"},
-    { rarity= "Uncommon", tags={ "Negativ", "Clanker" }, timeInSeconds=300, keybindingShuffle="wasd", title="Gehfehler", description="Für die nächsten 5 Minuten läufst du komisch..." },
-    { rarity= "Uncommon", tags={ "Negativ", "Clanker" }, timeInSeconds=300, popupChallenge=true, title="Virus", description="Ich glaube, das hättest du nicht runterladen sollen" },
+    { rarity= "Uncommon", tags={ "Negativ", "Clanker" }, timeInSeconds=600, keybindingShuffle="wasd", title="Gehfehler", description="Für die nächsten 10 Minuten läufst du komisch..." },
+    { rarity= "Uncommon", tags={ "Negativ", "Clanker" }, timeInSeconds=300, popupChallenge=true, title="Virus", description="Das hättest du liebr nicht herunterladen sollen" },
     { rarity= "Uncommon", tags={ "Positiv" }, timeInSeconds=120, title="Bob Ross", description="Male innerhalb 2 Minuten eine kleine World of Warcraft Impression in Paint und poste sie auf Discord" },
     { rarity= "Uncommon", tags={ "Negativ" }, title= "Shots, shots, shots!", description="Trinke einen Shot deiner Wahl"},
     { rarity= "Uncommon", tags={ "Negativ", "Sport" }, title= "I'm planking", description="Mache für 45 Sekunden eine Plank deiner Wahl (Front, Side, Reverse)"},
@@ -33,7 +33,7 @@ addonTable.Challenges = {
     { rarity= "Rare", tags={ "Negativ", "Clanker" }, timeInSeconds=300, keybindingShuffle="actionbuttons", title="Switcharoo", description="Die Tastenbelegung deiner Aktionsleiste ist für 5 Minuten vertauscht" },
     { rarity= "Rare", tags={ "Negativ"}, title= "Tax-Time!", description="Zahle Steuern an deine Gilde (Dein Level x2 in Silber)"},
     { rarity= "Rare", tags={ "Negativ" }, title="Bisschen Kleingeld?", description="Bettle bei einem Spieler für ein bisschen Kleingeld. Dein Ertrag kommt in die Gildenbank"},
-    { rarity= "Rare", tags={ "Negativ" }, title="Prost!", description="Sauf dich voll! (ingame)" },
+    { rarity= "Rare", tags={ "Negativ" }, title="Prost!", description="Besorg dir was alkohilisches zum Trinken und sauf dich voll!" },
     { rarity= "Rare", tags={ "Positiv" }, title="For me? *blushes*", description="Deine Mitspieler schenken dir die Mats für ein von dir herstellbares Item!"},
     { rarity= "Rare", tags={ "Negativ", "Sport" }, title= "Dann doch lieber 10 Hs", description="Mache 3 Burpees"},
     { rarity= "Rare", tags={ "Positiv" }, title= "Story Time", description="Erzähle den anderen eine Geschichte :)"},
@@ -45,8 +45,7 @@ addonTable.Challenges = {
     { rarity= "Epic", tags={ "Negativ" }, timeInSeconds=300, title= "Phasmo", description="Phasmo an dei Eier (Spiele die nächsten 5 Minuten mit nur einer Hand)"},
     { rarity= "Epic", tags={ "Positiv" }, title= "Shotcaller", description="Du bestimmst mit deinem nächsten Call was gemacht wird. Dein Call ist Gesetz!"},
     { rarity= "Epic", tags={ "Positiv", "Sport" }, title= "Sally goes up", description="Wenn du einen Stehschreibtisch hast, fahre ihn bis zum nächsten Event hoch. Wenn nicht, stehe auf und versuche 60 Sekunden mit durchgestreckten Beinen deine Zehen zu erreichen."},
-    { rarity= "Legendary", tags={ "Positiv" }, title= "Mom!", description="Ruf deine Mutter/deinen Vater an, falls das letzte Mal mehr als 1 Woche her ist."},
-    { rarity= "Legendary", tags={ "Negativ"}, title="Time to say goodbye", description= "Verabschiede dich von einem deiner Ausrüstungsgegenständen (verkauf es!)"},
+    { rarity= "Legendary", tags={ "Negativ"}, title="Time to say goodbye", description= "Verabschiede dich von einem deiner aktuell getragenen Ausrüstungsgegenständen und verkauf es"},
     { rarity= "Legendary", tags={ "Positiv" }, title= "JACKPOT!", description="Du bist reich! Hol dir den Gilden-Jackpot ab!"}
 }
 
