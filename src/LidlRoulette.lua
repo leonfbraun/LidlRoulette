@@ -27,6 +27,15 @@ end
 
 EnsureSavedSettings()
 
+local function GetPlayerFullName()
+    local firstName, secondName = UnitName("player")
+    if secondName then
+        return firstName .. " " .. secondName
+    end
+
+    return firstName
+end
+
 local savedVariablesFrame = CreateFrame("Frame")
 savedVariablesFrame:RegisterEvent("ADDON_LOADED")
 savedVariablesFrame:SetScript("OnEvent", function(self, _, loadedAddonName)
@@ -49,8 +58,7 @@ end
 
 -- creates a unique event ID based on the player's name, current timestamp, and a random number
 function addonTable:CreateEventID()
-    local firstName, lastName = UnitName("player")
-    local fullName = firstName .. " " .. lastName
+    local fullName = GetPlayerFullName()
     local timestamp = time()
     local randomNumber = math.random(100000, 999999)
 
@@ -58,8 +66,7 @@ function addonTable:CreateEventID()
 end
 
 function addonTable:OnLocalLevelUp(playerLevel)
-    local firstName, lastName = UnitName("player")
-    local fullName = firstName .. " " .. lastName
+    local fullName = GetPlayerFullName()
 
     local eventID = self:CreateEventID()
     local challengeID
@@ -82,8 +89,7 @@ function addonTable:OnLocalLevelUp(playerLevel)
 end
 
 function addonTable:OnLocalDeath()
-    local firstName, lastName = UnitName("player")
-    local fullName = firstName .. " " .. lastName
+    local fullName = GetPlayerFullName()
 
     local playerLevel = UnitLevel("player") or 1
 
@@ -131,8 +137,7 @@ function addonTable:OnLocalDuelLoss(winnerName, loserName)
 end
 
 function addonTable:OnLocalTimerEvent(challengeID, command)
-    local firstName, lastName = UnitName("player")
-    local fullName = firstName .. " " .. lastName
+    local fullName = GetPlayerFullName()
     local playerLevel = UnitLevel("player") or 1
     local eventID = self:CreateEventID()
 
@@ -153,8 +158,7 @@ end
 
 
 function addonTable.handleDuelResult(message)
-    local firstName, lastName = UnitName("player")
-    local fullName = firstName .. " " .. lastName
+    local fullName = GetPlayerFullName()
 
     local winner, loser = message:match(addonTable.patternKnockout)
 
@@ -201,8 +205,7 @@ SlashCmdList["LEVELROULETTE"] = function(message)
     end
 
     if message == "test1" then
-        local firstName, lastName = UnitName("player")
-        local fullName = firstName .. " " .. lastName
+        local fullName = GetPlayerFullName()
         local level = UnitLevel("player") or 1
         local challengeID
         if LidlRouletteDB.settings.isRouletteEnabled == true then
@@ -231,8 +234,7 @@ SlashCmdList["LEVELROULETTE"] = function(message)
             return
         end
 
-        local firstName, lastName = UnitName("player")
-        local fullName = firstName .. " " .. lastName
+        local fullName = GetPlayerFullName()
         local level = UnitLevel("player") or 1
         addonTable.ChallengeRouletteUi:ShowChallenge(fullName, level, challengeID, "test")
         return

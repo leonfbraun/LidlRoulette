@@ -20,7 +20,7 @@ local function BuildRarityPools(reason)
     local challengePools = {}
     for challengeID, challenge in ipairs(addonTable.Challenges) do
         local clankerChallengeAllowed =
-            not challenge.isClankerChallenge
+            not HasTag(challenge, "Clanker")
             or LidlRouletteDB.settings.areClankerChallengesEnabled
         if clankerChallengeAllowed
             and not ((reason == "death" or reason == "duel") and HasTag(challenge, "Positiv")) then
