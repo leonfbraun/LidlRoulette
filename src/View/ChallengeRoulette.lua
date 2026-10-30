@@ -60,7 +60,7 @@ function ChallengeRouletteUi:Initialize()
     closeButton:SetScript("OnClick", function()
         local challenge = addonTable.Roulette.GetChallenge(ChallengeRouletteUi.targetChallengeID)
         if challenge and challenge.guitarHero then
-            addonTable.GuitarHeroUi:Start()
+            addonTable.GuitarHeroUi:Start(ChallengeRouletteUi.targetChallengeID)
         elseif challenge and type(challenge.timeInSeconds) == "number" and challenge.timeInSeconds > 0 then
             addonTable.TimerUi.StartChallengeTimer(ChallengeRouletteUi.targetChallengeID)
         end

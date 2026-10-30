@@ -15,16 +15,17 @@ function Communication:Initialize()
     return true
 end
 
-function Communication.SendMessage(command, playerName, level, challengeID, eventID, challengerName, comboHighScore)
+function Communication.SendMessage(command, playerName, level, challengeID, eventID, challengerName, comboHighScore, challengeSong)
     local message = string.format(
-        "%s|%s|%d|%s|%s|%s|%s",
+        "%s|%s|%d|%s|%s|%s|%s|%s",
         command,
         playerName,
         level,
         challengeID and tostring(challengeID) or "-",
         eventID,
         challengerName or "-",
-        comboHighScore ~= nil and tostring(comboHighScore) or "-"
+        comboHighScore ~= nil and tostring(comboHighScore) or "-",
+        challengeSong or "-"
     )
 
     local partyMessageSuccess, partyMessageErrorMessage = C_ChatInfo.SendAddonMessage(
@@ -57,10 +58,10 @@ function Communication:OnMessageReceived(prefix, message, _, sender)
         return
     end
 
-    local command, playerName, level, challengeID, eventID, challengerName, comboHighScore =
+    local command, playerName, level, challengeID, eventID, challengerName, comboHighScore, challengeSong =
         strsplit("|", message)
 
-    if command ~= "LEVELUP" and command ~= "DEATH" and command ~= "DUEL" and command ~= "TIMERFINISHED" and command ~= "TIMERCANCELED" then
+    if command ~= "LEVELUP" and command ~= "DEATH" and command ~= "DUEL" and command ~= "TIMERFINISHED" and command ~= "TIMERCANCELED" and command ~= "GUITARHEROFINISHED" then
         return
     end
 
@@ -95,6 +96,7 @@ function Communication:OnMessageReceived(prefix, message, _, sender)
         eventID,
         challengerName ~= "-" and challengerName or nil,
         command,
-        playerComboHighScore
+        playerComboHighScore,
+        challengeSong ~= "-" and challengeSong or nil
     )
 end

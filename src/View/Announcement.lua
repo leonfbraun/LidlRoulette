@@ -48,7 +48,7 @@ function AnnouncementUi:Initialize()
     announcementFrame:Hide()
 end
 
-function AnnouncementUi:ShowAnnouncement(playerName, challengerName, level, challengeID, command, comboHighScore)
+function AnnouncementUi:ShowAnnouncement(playerName, challengerName, level, challengeID, command, comboHighScore, challengeSong)
     local announcementMessage
     if command == "DEATH" then
         announcementMessage = "|cffffffff" .. playerName .. "|r ist mit Level " .. tostring(level) .. " gestorben"
@@ -60,6 +60,8 @@ function AnnouncementUi:ShowAnnouncement(playerName, challengerName, level, chal
         announcementMessage = "Der Timer von |cffffffff" .. playerName .. "|r's Challenge ist abgelaufen!"
     elseif command == "TIMERCANCELED" then
         announcementMessage = "|cffffffff" .. playerName .. "|r hat den Challenge-Timer abgebrochen."
+    elseif command == "GUITARHEROFINISHED" then
+        announcementMessage = "|cffffffff" .. playerName .. "|r hat Guitar Hero gespielt!"
     else
         return
     end
@@ -68,6 +70,9 @@ function AnnouncementUi:ShowAnnouncement(playerName, challengerName, level, chal
         local challenge = addonTable.Roulette.GetChallenge(challengeID)
         local scoreUnit = challenge and challenge.bayonettaCombo and " Combo Points" or " Treffer"
         announcementMessage = announcementMessage .. "\nCombo-Highscore: |cffffb52e" .. tostring(comboHighScore) .. scoreUnit .. "|r"
+    elseif comboHighScore ~= nil and command == "GUITARHEROFINISHED" then
+        announcementMessage = announcementMessage .. "\nSong: |cffffb52e" .. tostring(challengeSong or "Unbekannt") ..
+            "|r\nScore: |cffffb52e" .. tostring(comboHighScore) .. " Punkte|r"
     end
     
     playerAnnouncementText:SetText(announcementMessage)

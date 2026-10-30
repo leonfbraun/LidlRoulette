@@ -13,6 +13,10 @@ local LANE_COLORS = {
 local COUNTDOWN_SECONDS = 3
 local HIT_WINDOW = 0.24
 local TICK_SECONDS = 0.1
+local NOTE_TRAVEL_SECONDS = 1.1
+local NOTE_FALL_DISTANCE = 260
+local LANE_HIT_Y = 55
+local MAX_MARKERS = 16
 
 local frame
 local songText
@@ -20,17 +24,25 @@ local scoreText
 local statusText
 local timeText
 local laneLabels = {}
+local laneFeedbackTexts = {}
+local laneFeedbackExpires = {}
+local laneOffsets = {}
+local markerPool = {}
+local activeMarkers = {}
 local closeButton
 local ticker
 local sessionID = 0
 local song
+local challengeID
 local chart
-local beatDuration
-local beatCount
+local stepDuration
+local stepCount
+local nextVisualStep = 0
+local nextMissCheckStep = 0
 local startedAt
 local countdownAt
-local lastDisplayedBeat = -1
-local judgedBeat = -1
+local lastDisplayedStep = -1
+local judgedSteps = {}
 local lastDisplayedSecond = -1
 local lastCountdownNumber
 local score = 0
@@ -42,6 +54,59 @@ local musicStarted = false
 
 local function UpdateScore()
     scoreText:SetText(string.format("%05d    COMBO %d", score, combo))
+end
+
+local function ShowLaneFeedback(key, wasHit)
+    local feedbackText = laneFeedbackTexts[key]
+    if not feedbackText then
+        return
+    end
+
+    feedbackText:SetText(wasHit and "HIT!" or "MISS!")
+    if wasHit then
+        feedbackText:SetTextColor(0.35, 1, 0.4)
+    else
+        feedbackText:SetTextColor(1, 0.25, 0.25)
+    end
+    feedbackText:Show()
+    laneFeedbackExpires[key] = GetTime() + 0.65
+end
+
+local function ReleaseMarker(marker)
+    marker.active = false
+    marker.label:Hide()
+end
+
+local function AcquireMarker()
+    for _, marker in ipairs(markerPool) do
+        if not marker.active then
+            marker.active = true
+            marker.label:Show()
+            return marker
+        end
+    end
+
+    if #markerPool >= MAX_MARKERS then
+        return nil
+    end
+
+    local label = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    label:SetFont("Fonts\\FRIZQT__.TTF", 28, "OUTLINE")
+    local marker = { label = label, active = true }
+    table.insert(markerPool, marker)
+    label:Show()
+    return marker
+end
+
+local function RemoveMarkerForStep(stepIndex)
+    for index = #activeMarkers, 1, -1 do
+        local marker = activeMarkers[index]
+        if marker.stepIndex == stepIndex then
+            ReleaseMarker(marker)
+            table.remove(activeMarkers, index)
+            return
+        end
+    end
 end
 
 local function StopGame(showResult)
@@ -60,16 +125,25 @@ local function StopGame(showResult)
     end
     musicStarted = false
     frame:SetPropagateKeyboardInput(true)
+    for _, marker in ipairs(activeMarkers) do
+        ReleaseMarker(marker)
+    end
+    activeMarkers = {}
 
     if showResult then
-        if lastDisplayedBeat >= 0 and judgedBeat ~= lastDisplayedBeat then
-            misses = misses + 1
+        while nextMissCheckStep < stepCount do
+            local key = chart:sub(nextMissCheckStep + 1, nextMissCheckStep + 1)
+            if key ~= "-" and not judgedSteps[nextMissCheckStep] then
+                misses = misses + 1
+            end
+            nextMissCheckStep = nextMissCheckStep + 1
         end
         statusText:SetText("Song beendet | Treffer: " .. hits .. " | Verfehlt: " .. misses)
         closeButton:SetText("Schließen")
         UpdateScore()
         print("|cff2674cc[L|cffff0000i|rDL Roulette]|r Guitar Hero: " .. song.title ..
             " beendet. Score: " .. score .. " | Treffer: " .. hits .. " | Verfehlt: " .. misses)
+        addonTable:OnLocalTimerEvent(challengeID, "GUITARHEROFINISHED", score, song.title)
     else
         frame:Hide()
     end
@@ -82,24 +156,29 @@ local function HandleKeyPress(key)
     end
 
     local elapsed = GetTime() - startedAt - song.beatOffset
-    local beatIndex = math.floor(elapsed / beatDuration + 0.5)
-    local timingError = math.abs(elapsed - beatIndex * beatDuration)
-    if beatIndex < 0 or beatIndex >= beatCount or timingError > HIT_WINDOW or judgedBeat == beatIndex then
-        misses = misses + 1
-        combo = 0
-        UpdateScore()
+    local stepIndex = math.floor(elapsed / stepDuration + 0.5)
+    local timingError = math.abs(elapsed - stepIndex * stepDuration)
+    if stepIndex < 0 or stepIndex >= stepCount or timingError > HIT_WINDOW then
         return
     end
 
-    judgedBeat = beatIndex
-    local expectedKey = chart:sub(beatIndex % #chart + 1, beatIndex % #chart + 1)
+    local expectedKey = chart:sub(stepIndex + 1, stepIndex + 1)
+    if expectedKey == "-" or judgedSteps[stepIndex] then
+        return
+    end
+
+    judgedSteps[stepIndex] = true
+    RemoveMarkerForStep(stepIndex)
     if key == expectedKey then
         hits = hits + 1
         combo = combo + 1
         score = score + math.max(50, math.floor(100 * (1 - timingError / HIT_WINDOW)))
+        ShowLaneFeedback(expectedKey, true)
     else
         misses = misses + 1
         combo = 0
+        ShowLaneFeedback(key, false)
+        ShowLaneFeedback(expectedKey, false)
     end
     UpdateScore()
 end
@@ -123,27 +202,80 @@ local function UpdateGame()
         musicStarted = true
         startedAt = GetTime()
         PlayMusic(song.music)
-        statusText:SetText("Drücke die angezeigte Taste im Takt")
+        statusText:SetText("Drücke die Taste, wenn der fallende Marker W A S D erreicht")
         return
     end
 
     local elapsed = GetTime() - startedAt
-    local beatIndex = math.floor((elapsed - song.beatOffset + HIT_WINDOW) / beatDuration)
-    if beatIndex >= 0 and beatIndex < beatCount and beatIndex ~= lastDisplayedBeat then
-        if lastDisplayedBeat >= 0 and judgedBeat ~= lastDisplayedBeat then
-            misses = misses + 1
-            combo = 0
-        end
-
-        lastDisplayedBeat = beatIndex
-        local expectedKey = chart:sub(beatIndex % #chart + 1, beatIndex % #chart + 1)
-        statusText:SetText("JETZT: " .. expectedKey)
+    local stepIndex = math.floor((elapsed - song.beatOffset + HIT_WINDOW) / stepDuration)
+    if stepIndex >= 0 and stepIndex < stepCount and stepIndex ~= lastDisplayedStep then
+        lastDisplayedStep = stepIndex
+        local expectedKey = chart:sub(stepIndex + 1, stepIndex + 1)
         for laneKey, label in pairs(laneLabels) do
             local color = LANE_COLORS[laneKey]
-            local alpha = laneKey == expectedKey and 1 or 0.35
+            local alpha = laneKey == expectedKey and expectedKey ~= "-" and 1 or 0.35
             label:SetTextColor(color[1] * alpha, color[2] * alpha, color[3] * alpha)
         end
         UpdateScore()
+    end
+
+    local latestExpiredStep = math.floor((elapsed - song.beatOffset - HIT_WINDOW) / stepDuration)
+    while nextMissCheckStep <= latestExpiredStep and nextMissCheckStep < stepCount do
+        local key = chart:sub(nextMissCheckStep + 1, nextMissCheckStep + 1)
+        if key ~= "-" and not judgedSteps[nextMissCheckStep] then
+            misses = misses + 1
+            combo = 0
+            ShowLaneFeedback(key, false)
+        end
+        nextMissCheckStep = nextMissCheckStep + 1
+    end
+
+    local now = GetTime()
+    for key, expiresAt in pairs(laneFeedbackExpires) do
+        if now >= expiresAt then
+            laneFeedbackTexts[key]:Hide()
+            laneFeedbackExpires[key] = nil
+        end
+    end
+
+    local generatedMarkers = 0
+    while nextVisualStep < stepCount and generatedMarkers < MAX_MARKERS do
+        local hitAt = song.beatOffset + nextVisualStep * stepDuration
+        local timeUntilHit = hitAt - elapsed
+        if timeUntilHit > NOTE_TRAVEL_SECONDS then
+            break
+        end
+
+        local currentStep = nextVisualStep
+        nextVisualStep = nextVisualStep + 1
+        generatedMarkers = generatedMarkers + 1
+        local key = chart:sub(currentStep + 1, currentStep + 1)
+        if key ~= "-" and timeUntilHit >= -HIT_WINDOW then
+            local marker = AcquireMarker()
+            if marker then
+            marker.stepIndex = currentStep
+                marker.key = key
+                marker.hitAt = hitAt
+                marker.label:SetText(key)
+                local color = LANE_COLORS[key]
+                marker.label:SetTextColor(color[1], color[2], color[3])
+                table.insert(activeMarkers, marker)
+            end
+        end
+    end
+
+    for index = #activeMarkers, 1, -1 do
+        local marker = activeMarkers[index]
+        local timeUntilHit = marker.hitAt - elapsed
+        if timeUntilHit < -HIT_WINDOW then
+            ReleaseMarker(marker)
+            table.remove(activeMarkers, index)
+        else
+            local progress = 1 - timeUntilHit / NOTE_TRAVEL_SECONDS
+            local y = LANE_HIT_Y + NOTE_FALL_DISTANCE * (1 - progress)
+            marker.label:ClearAllPoints()
+            marker.label:SetPoint("CENTER", frame, "BOTTOM", laneOffsets[marker.key], y)
+        end
     end
 
     local currentSecond = math.floor(elapsed)
@@ -163,7 +295,7 @@ local function Initialize()
     end
 
     frame = CreateFrame("Frame", "LidlRouletteGuitarHeroFrame", UIParent, "BackdropTemplate")
-    frame:SetSize(560, 260)
+    frame:SetSize(560, 420)
     frame:SetPoint("CENTER")
     frame:SetFrameStrata("DIALOG")
     frame:SetClampedToScreen(true)
@@ -176,6 +308,8 @@ local function Initialize()
 
     songText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     songText:SetPoint("TOP", frame, "TOP", 0, -16)
+    songText:SetWidth(520)
+    songText:SetJustifyH("CENTER")
     songText:SetFont("Fonts\\FRIZQT__.TTF", 22, "OUTLINE")
 
     scoreText = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightLarge")
@@ -187,17 +321,27 @@ local function Initialize()
     timeText:SetFont("Fonts\\FRIZQT__.TTF", 14, "OUTLINE")
 
     statusText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    statusText:SetPoint("CENTER", frame, "CENTER", 0, 40)
-    statusText:SetFont("Fonts\\FRIZQT__.TTF", 24, "OUTLINE")
+    statusText:SetPoint("TOP", frame, "TOP", 0, -72)
+    statusText:SetWidth(520)
+    statusText:SetJustifyH("CENTER")
+    statusText:SetFont("Fonts\\FRIZQT__.TTF", 16, "OUTLINE")
 
     for index, key in ipairs(LANE_KEYS) do
         local label = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-        label:SetPoint("BOTTOM", frame, "BOTTOM", (index - 2.5) * 112, 50)
+        local laneOffset = (index - 2.5) * 112
+        label:SetPoint("CENTER", frame, "BOTTOM", laneOffset, LANE_HIT_Y)
         label:SetFont("Fonts\\FRIZQT__.TTF", 32, "OUTLINE")
         label:SetText(key)
         local color = LANE_COLORS[key]
         label:SetTextColor(color[1], color[2], color[3], 0.35)
         laneLabels[key] = label
+        laneOffsets[key] = laneOffset
+
+        local feedbackText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        feedbackText:SetPoint("BOTTOM", label, "TOP", 0, 5)
+        feedbackText:SetFont("Fonts\\FRIZQT__.TTF", 11, "OUTLINE")
+        feedbackText:Hide()
+        laneFeedbackTexts[key] = feedbackText
     end
 
     closeButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
@@ -217,17 +361,19 @@ local function Initialize()
     frame:Hide()
 end
 
-function GuitarHeroUi:Start()
+function GuitarHeroUi:Start(challengeIDArg)
     local songs = addonTable.GuitarHeroSongs or {}
     local validSongs = {}
     for _, candidate in ipairs(songs) do
         if type(candidate.bpm) == "number" and candidate.bpm >= 30 and candidate.bpm <= 300
             and type(candidate.duration) == "number" and candidate.duration > 0 and candidate.duration <= 180
             and type(candidate.beatOffset) == "number" and candidate.beatOffset >= 0 and candidate.beatOffset < candidate.duration
-            and type(candidate.chart) == "string" and #candidate.chart > 0 and #candidate.chart <= 64
+            and type(candidate.stepsPerBeat) == "number" and candidate.stepsPerBeat >= 1
+            and candidate.stepsPerBeat <= 8 and candidate.stepsPerBeat == math.floor(candidate.stepsPerBeat)
+            and type(candidate.chart) == "string" and #candidate.chart > 0 and #candidate.chart <= 1024
             and type(candidate.music) == "string" and candidate.music ~= "" then
             local candidateChart = candidate.chart:gsub("%s", ""):upper()
-            if candidateChart:match("^[WASD]+$") then
+            if candidateChart:match("^[WASD%-]+$") then
                 table.insert(validSongs, { song = candidate, chart = candidateChart })
             end
         end
@@ -245,13 +391,21 @@ function GuitarHeroUi:Start()
 
     local selected = validSongs[math.random(#validSongs)]
     song = selected.song
+    challengeID = challengeIDArg
     chart = selected.chart
-    beatDuration = 60 / song.bpm
-    beatCount = math.floor((song.duration - song.beatOffset) / beatDuration) + 1
+    stepDuration = 60 / song.bpm / song.stepsPerBeat
+    stepCount = math.min(#chart, math.floor((song.duration - song.beatOffset) / stepDuration) + 1)
+    nextVisualStep = 0
+    nextMissCheckStep = 0
+    activeMarkers = {}
     countdownAt = GetTime()
     lastCountdownNumber = COUNTDOWN_SECONDS
-    lastDisplayedBeat = -1
-    judgedBeat = -1
+    lastDisplayedStep = -1
+    judgedSteps = {}
+    laneFeedbackExpires = {}
+    for _, feedbackText in pairs(laneFeedbackTexts) do
+        feedbackText:Hide()
+    end
     lastDisplayedSecond = -1
     score = 0
     hits = 0
@@ -271,7 +425,7 @@ function GuitarHeroUi:Start()
         label:SetTextColor(color[1], color[2], color[3], 0.35)
     end
 
-    frame:SetPropagateKeyboardInput(false)
+    frame:SetPropagateKeyboardInput(true)
     frame:Show()
     frame:Raise()
     local currentSession = sessionID
