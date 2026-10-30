@@ -3,7 +3,7 @@ local addonName, addonTable = ...
 addonTable.DevilMayCryComboUi = {}
 local ComboUi = addonTable.DevilMayCryComboUi
 
-local COMBO_TIMEOUT = 5
+local COMBO_TIMEOUT = 8
 local MAX_METER_HITS = 40
 local MUSIC_FADE_SECONDS = 3
 local MUSIC_FILE = "Interface\\AddOns\\LidlRoulette\\src\\Media\\Sounds\\BuryTheLight.ogg"
@@ -13,6 +13,7 @@ local rankText
 local rankNameText
 local comboText
 local comboLabelText
+local countdownText
 local meter
 local comboCount = 0
 local lastHitTime
@@ -141,6 +142,11 @@ local function Initialize()
     comboLabelText:SetText("HIT COMBO")
     comboLabelText:SetTextColor(0.9, 0.82, 0.82)
 
+    countdownText = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    countdownText:SetPoint("TOPRIGHT", comboLabelText, "BOTTOMRIGHT", 0, -4)
+    countdownText:SetFont("Fonts\\FRIZQT__.TTF", 15, "OUTLINE")
+    countdownText:SetTextColor(1, 0.35, 0.2)
+
     meter = CreateFrame("StatusBar", nil, frame)
     meter:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 24, 17)
     meter:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -20, 17)
@@ -179,6 +185,27 @@ local function ResetCombo()
         frame:SetScript("OnUpdate", nil)
         frame:Hide()
     end
+    if countdownText then
+        countdownText:SetText("")
+    end
+    StopComboMusic()
+end
+
+local function UpdateComboCountdown()
+    if not lastHitTime then
+        return
+    end
+
+    local remaining = math.max(0, COMBO_TIMEOUT - (GetTime() - lastHitTime))
+    countdownText:SetText(string.format("%.1fs", remaining))
+
+    if remaining <= 0 then
+        ResetCombo()
+    end
+end
+
+local function StartComboCountdown()
+    frame:SetScript("OnUpdate", UpdateComboCountdown)
 end
 
 function ComboUi:RegisterHit()
@@ -187,6 +214,7 @@ function ComboUi:RegisterHit()
     end
 
     Initialize()
+    local wasVisible = frame:IsShown()
     comboCount = comboCount + 1
     lastHitTime = GetTime()
 
@@ -198,12 +226,12 @@ function ComboUi:RegisterHit()
     comboText:SetText(tostring(comboCount))
     meter:SetValue(math.min(comboCount, MAX_METER_HITS))
     meter:SetStatusBarColor(rank.color[1], rank.color[2], rank.color[3])
+    countdownText:SetText(string.format("%.1fs", COMBO_TIMEOUT))
     frame:Show()
-    frame:SetScript("OnUpdate", function()
-        if lastHitTime and GetTime() - lastHitTime >= COMBO_TIMEOUT then
-            ResetCombo()
-        end
-    end)
+    if not wasVisible then
+        StartComboMusic()
+    end
+    StartComboCountdown()
 end
 
 function ComboUi:Start()
@@ -211,7 +239,6 @@ function ComboUi:Start()
     ResetCombo()
     isActive = true
     isPaused = false
-    StartComboMusic()
     frame:RegisterUnitEvent("UNIT_COMBAT", "target")
 end
 
@@ -232,14 +259,13 @@ function ComboUi:Resume()
     end
 
     isPaused = false
-    StartComboMusic()
+    if frame:IsShown() then
+        StartComboMusic()
+    end
     if lastHitTime then
         lastHitTime = GetTime()
-        frame:SetScript("OnUpdate", function()
-            if lastHitTime and GetTime() - lastHitTime >= COMBO_TIMEOUT then
-                ResetCombo()
-            end
-        end)
+        countdownText:SetText(string.format("%.1fs", COMBO_TIMEOUT))
+        StartComboCountdown()
     end
     frame:RegisterUnitEvent("UNIT_COMBAT", "target")
 end
@@ -250,6 +276,5 @@ function ComboUi:Stop()
     end
     isActive = false
     isPaused = false
-    StopComboMusic()
     ResetCombo()
 end
