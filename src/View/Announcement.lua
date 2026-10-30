@@ -48,7 +48,7 @@ function AnnouncementUi:Initialize()
     announcementFrame:Hide()
 end
 
-function AnnouncementUi:ShowAnnouncement(playerName, challengerName, level, challengeID, command)
+function AnnouncementUi:ShowAnnouncement(playerName, challengerName, level, challengeID, command, comboHighScore)
     local announcementMessage
     if command == "DEATH" then
         announcementMessage = "|cffffffff" .. playerName .. "|r ist mit Level " .. tostring(level) .. " gestorben"
@@ -62,6 +62,10 @@ function AnnouncementUi:ShowAnnouncement(playerName, challengerName, level, chal
         announcementMessage = "|cffffffff" .. playerName .. "|r hat den Challenge-Timer abgebrochen."
     else
         return
+    end
+
+    if comboHighScore ~= nil and (command == "TIMERFINISHED" or command == "TIMERCANCELED") then
+        announcementMessage = announcementMessage .. "\nCombo-Highscore: |cffffb52e" .. tostring(comboHighScore) .. " Treffer|r"
     end
     
     playerAnnouncementText:SetText(announcementMessage)

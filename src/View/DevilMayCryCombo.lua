@@ -16,6 +16,7 @@ local comboLabelText
 local countdownText
 local meter
 local comboCount = 0
+local highScore = 0
 local lastHitTime
 local isActive = false
 local isPaused = false
@@ -216,6 +217,7 @@ function ComboUi:RegisterHit()
     Initialize()
     local wasVisible = frame:IsShown()
     comboCount = comboCount + 1
+    highScore = math.max(highScore, comboCount)
     lastHitTime = GetTime()
 
     local rank = GetRank(comboCount)
@@ -237,6 +239,7 @@ end
 function ComboUi:Start()
     Initialize()
     ResetCombo()
+    highScore = 0
     isActive = true
     isPaused = false
     frame:RegisterUnitEvent("UNIT_COMBAT", "target")
@@ -271,10 +274,13 @@ function ComboUi:Resume()
 end
 
 function ComboUi:Stop()
+    local finalHighScore = isActive and highScore or nil
     if frame and frame:IsEventRegistered("UNIT_COMBAT") then
         frame:UnregisterEvent("UNIT_COMBAT")
     end
     isActive = false
     isPaused = false
     ResetCombo()
+    highScore = 0
+    return finalHighScore
 end

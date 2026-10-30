@@ -142,10 +142,10 @@ local function EndChallengeTimer(command)
     timerFrame.challengeID = nil
     timerFrame:SetScript("OnUpdate", nil)
     timerFrame:Hide()
-    addonTable.DevilMayCryComboUi.Stop()
+    local comboHighScore = addonTable.DevilMayCryComboUi.Stop()
     addonTable.Keybindings.Stop()
     addonTable.PopupChallengeUi.Stop()
-    addonTable:OnLocalTimerEvent(challengeID, command)
+    addonTable:OnLocalTimerEvent(challengeID, command, comboHighScore)
 end
 
 function TimerUi.StartChallengeTimer(challengeID)
