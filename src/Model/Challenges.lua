@@ -50,7 +50,9 @@ addonTable.Challenges = {
     { rarity= "Epic", tags={ "Positiv", "Sport" }, title= "Sally goes up", description="Wenn du einen Stehschreibtisch hast, fahre ihn bis zum nächsten Event hoch. Wenn nicht, stehe auf und versuche 60 Sekunden mit durchgestreckten Beinen deine Zehen zu erreichen."},
     { rarity= "Legendary", tags={ "Negativ"}, title="Time to say goodbye", description= "Verabschiede dich von einem deiner aktuell getragenen Ausrüstungsgegenständen und verkauf es"},
     { rarity= "Legendary", tags={ "Positiv" }, title= "JACKPOT!", description="Du bist reich! Hol dir den Gilden-Jackpot ab!"},
-    { rarity= "Rare", tags={ "Positiv", "Clanker" }, guitarHero=true, title="Guitar Hero", description="Spiele einen zufälligen Song und drücke W, A, S und D im Takt der erscheinenden Noten."}
+    { rarity= "Uncommon", tags={ "Positiv", "Clanker" }, guitarHero=true, guitarHeroDifficulty="easy", title="WoW-Hero: Easy", description="Spiele einen zufälligen Song der Schwierigkeitsstufe Easy in WoW-Hero"},
+    { rarity= "Rare", tags={ "Positiv", "Clanker" }, guitarHero=true, guitarHeroDifficulty="medium", title="WoW-Hero: Medium", description="Spiele einen zufälligen Song der Schwierigkeitsstufe Medium in WoW-Hero"},
+    { rarity= "Epic", tags={ "Positiv", "Clanker" }, guitarHero=true, guitarHeroDifficulty="hard", title="WoW-Hero: Hard", description="Spiele einen zufälligen Song der Schwierigkeitsstufe Hard in WoW-Hero"}
 }
 
 local knownTags = {}

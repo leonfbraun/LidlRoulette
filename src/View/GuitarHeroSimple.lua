@@ -417,9 +417,17 @@ end
 
 function GuitarHeroUi:Start(challengeIDArg)
     local songs = addonTable.GuitarHeroSongs or {}
+    local challenge = addonTable.Roulette.GetChallenge(challengeIDArg)
+    local requiredDifficulty = challenge and challenge.guitarHeroDifficulty
+    if requiredDifficulty ~= "easy" and requiredDifficulty ~= "medium" and requiredDifficulty ~= "hard" then
+        print("|cffff0000[Lidl Roulette]|r Guitar Hero hat keine gültige Schwierigkeitsstufe.")
+        return
+    end
+
     local validSongs = {}
     for _, candidate in ipairs(songs) do
-        if type(candidate.bpm) == "number" and candidate.bpm >= 30 and candidate.bpm <= 300
+        if candidate.difficulty == requiredDifficulty
+            and type(candidate.bpm) == "number" and candidate.bpm >= 30 and candidate.bpm <= 300
             and type(candidate.duration) == "number" and candidate.duration > 0 and candidate.duration <= 180
             and type(candidate.beatOffset) == "number" and candidate.beatOffset >= 0 and candidate.beatOffset < candidate.duration
             and type(candidate.stepsPerBeat) == "number" and candidate.stepsPerBeat >= 1
