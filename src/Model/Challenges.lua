@@ -34,6 +34,7 @@ addonTable.Challenges = {
     { rarity= "Rare", tags={ "Negativ"}, title= "Tax-Time!", description="Zahle Steuern an deine Gilde (Dein Level x2 in Silber)"},
     { rarity= "Rare", tags={ "Negativ" }, title="Bisschen Kleingeld?", description="Bettle bei einem Spieler für ein bisschen Kleingeld. Dein Ertrag kommt in die Gildenbank"},
     { rarity= "Rare", tags={ "Negativ" }, title="Prost!", description="Besorg dir was alkohilisches zum Trinken und sauf dich voll!" },
+    { rarity= "Rare", tags={ "Positiv" }, timeInSeconds=300, devilMayCryCombo=true, title="Devil May Cry", description="Lande in den nächsten 5 Minuten möglichst viele Treffer auf deinem Ziel. Auch Auto-Attacks zählen; die Combo bricht nach 5 Sekunden ohne Treffer ab. In Gruppen können Treffer anderer Spieler auf dein Ziel mitgezählt werden." },
     { rarity= "Rare", tags={ "Positiv" }, title="For me? *blushes*", description="Deine Mitspieler schenken dir die Mats für ein von dir herstellbares Item!"},
     { rarity= "Rare", tags={ "Negativ", "Sport" }, title= "Dann doch lieber 10 Hs", description="Mache 3 Burpees"},
     { rarity= "Rare", tags={ "Positiv" }, title= "Story Time", description="Erzähle den anderen eine Geschichte :)"},

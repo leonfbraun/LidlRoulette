@@ -142,6 +142,7 @@ local function EndChallengeTimer(command)
     timerFrame.challengeID = nil
     timerFrame:SetScript("OnUpdate", nil)
     timerFrame:Hide()
+    addonTable.DevilMayCryComboUi.Stop()
     addonTable.Keybindings.Stop()
     addonTable.PopupChallengeUi.Stop()
     addonTable:OnLocalTimerEvent(challengeID, command)
@@ -174,6 +175,7 @@ function TimerUi.StartChallengeTimer(challengeID)
             startTime = GetTime() - (duration - remaining)
             paused = false
             addonTable.PopupChallengeUi.Resume()
+            addonTable.DevilMayCryComboUi.Resume()
             self:SetText("Pause")
         else
             remaining = math.max(0, duration - (GetTime() - startTime))
@@ -183,6 +185,7 @@ function TimerUi.StartChallengeTimer(challengeID)
             end
             paused = true
             addonTable.PopupChallengeUi.Pause()
+            addonTable.DevilMayCryComboUi.Pause()
             self:SetText("Fortsetzen")
         end
     end)
@@ -200,6 +203,9 @@ function TimerUi.StartChallengeTimer(challengeID)
     end
     if challenge.popupChallenge then
         addonTable.PopupChallengeUi.Start()
+    end
+    if challenge.devilMayCryCombo then
+        addonTable.DevilMayCryComboUi.Start()
     end
     timerFrame:SetScript("OnUpdate", function(self)
         if paused then
