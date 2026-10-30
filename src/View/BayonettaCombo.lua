@@ -14,7 +14,6 @@ local pointsText
 local pointsLabel
 local multiplierText
 local countdownText
-local accent
 local hitRows = {}
 local recentHits = {}
 local comboPoints = 0
@@ -111,27 +110,16 @@ local function Initialize()
         return
     end
 
-    frame = CreateFrame("Frame", "LidlRouletteBayonettaComboFrame", UIParent, "BackdropTemplate")
+    frame = CreateFrame("Frame", "LidlRouletteBayonettaComboFrame", UIParent)
     frame:SetSize(430, 245)
     frame:SetPoint("RIGHT", UIParent, "RIGHT", -90, 40)
     frame:SetFrameStrata("HIGH")
     frame:SetClampedToScreen(true)
-    frame:SetBackdrop({
-        bgFile = "Interface\\Buttons\\WHITE8X8",
-        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-        edgeSize = 12,
-        insets = { left = 3, right = 3, top = 3, bottom = 3 },
-    })
     frame:SetMovable(true)
     frame:EnableMouse(true)
     frame:RegisterForDrag("LeftButton")
     frame:SetScript("OnDragStart", frame.StartMoving)
     frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
-
-    accent = frame:CreateTexture(nil, "ARTWORK")
-    accent:SetPoint("TOPLEFT", frame, "TOPLEFT", 8, -8)
-    accent:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 8, 8)
-    accent:SetWidth(4)
 
     variantTitle = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     variantTitle:SetPoint("TOPLEFT", frame, "TOPLEFT", 28, -16)
@@ -163,14 +151,16 @@ local function Initialize()
     countdownText:SetTextColor(1, 0.4, 0.55)
 
     for index = 1, MAX_VISIBLE_HITS do
-        local row = CreateFrame("Frame", nil, frame)
+        local row = CreateFrame("Frame", nil, frame, "BackdropTemplate")
         row:SetHeight(25)
         row:SetPoint("TOPLEFT", frame, "TOPLEFT", 31, -112 - ((index - 1) * 31))
         row:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -31, -112 - ((index - 1) * 31))
-
-        row.background = row:CreateTexture(nil, "BACKGROUND")
-        row.background:SetAllPoints()
-        row.background:SetTexture("Interface\\Buttons\\WHITE8X8")
+        row:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
+            insets = { left = 0, right = 0, top = 0, bottom = 0 },
+        })
 
         row.accent = row:CreateTexture(nil, "ARTWORK")
         row.accent:SetPoint("TOPLEFT", row, "TOPLEFT", 0, 0)
@@ -223,15 +213,13 @@ local function Initialize()
 end
 
 local function ApplyVariant()
-    frame:SetBackdropColor(activeVariant.background[1], activeVariant.background[2], activeVariant.background[3], activeVariant.background[4])
-    frame:SetBackdropBorderColor(activeVariant.border[1], activeVariant.border[2], activeVariant.border[3], activeVariant.border[4])
-    accent:SetColorTexture(activeVariant.accent[1], activeVariant.accent[2], activeVariant.accent[3], activeVariant.accent[4])
     variantTitle:SetText(activeVariant.name .. "  /  " .. activeVariant.subtitle)
     variantTitle:SetTextColor(activeVariant.score[1], activeVariant.score[2], activeVariant.score[3])
     pointsText:SetTextColor(activeVariant.score[1], activeVariant.score[2], activeVariant.score[3])
     multiplierText:SetTextColor(activeVariant.score[1], activeVariant.score[2], activeVariant.score[3])
     for _, row in ipairs(hitRows) do
-        row.background:SetColorTexture(activeVariant.rowBackground[1], activeVariant.rowBackground[2], activeVariant.rowBackground[3], activeVariant.rowBackground[4])
+        row:SetBackdropColor(activeVariant.rowBackground[1], activeVariant.rowBackground[2], activeVariant.rowBackground[3], activeVariant.rowBackground[4])
+        row:SetBackdropBorderColor(activeVariant.border[1], activeVariant.border[2], activeVariant.border[3], activeVariant.border[4])
         row.accent:SetColorTexture(activeVariant.accent[1], activeVariant.accent[2], activeVariant.accent[3], 1)
     end
 end
