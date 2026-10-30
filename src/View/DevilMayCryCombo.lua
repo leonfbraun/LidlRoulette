@@ -252,8 +252,7 @@ function ComboUi:Pause()
 
     isPaused = true
     frame:UnregisterEvent("UNIT_COMBAT")
-    frame:SetScript("OnUpdate", nil)
-    StopComboMusic()
+    ResetCombo()
 end
 
 function ComboUi:Resume()
@@ -262,14 +261,6 @@ function ComboUi:Resume()
     end
 
     isPaused = false
-    if frame:IsShown() then
-        StartComboMusic()
-    end
-    if lastHitTime then
-        lastHitTime = GetTime()
-        countdownText:SetText(string.format("%.1fs", COMBO_TIMEOUT))
-        StartComboCountdown()
-    end
     frame:RegisterUnitEvent("UNIT_COMBAT", "target")
 end
 

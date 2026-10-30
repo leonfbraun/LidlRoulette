@@ -37,4 +37,22 @@ addonTable.GuitarHeroSongs = {
         stepsPerBeat = 2,
         chart = "--------------------------D-A-WA-AD-A-W--AD-A-WA-AD-A-WA--W-S-WAS-W-ADD-SAD-A-DAS-D-SSW-SSD-ASW-DSW-ADW-SSD-SDD--SWDS-WWW-DSS-S--DS------S--S-------------D-A-WA-SW-A-WA-SD-A-WA-AD-A-WA-SD-A-WSS-DSA-SSS-DDA-WSS-D-A-WSS-DSA-WAW-D-ADW-DSD-ASW-SSD-ADD-WSD----",
     },
+    {
+        title = "1, 2 Oatmeal",
+        music = "Interface\\AddOns\\LidlRoulette\\src\\Media\\Sounds\\GuitarHero\\Oatmeal.ogg",
+        bpm = 124.5,
+        duration = 132,
+        beatOffset = 0.273,
+        stepsPerBeat = 2,
+        chart = "---SSA-AASS-ASS--W-SSDD-WWD-DDW-DA-DW-SAS-SSD-WDW-AWD-S-DS-WDSD-SSA-SDW-AS-ADAW-WDA-DSS-SDD-DWD-AD-ASSW-SAS-SSD-SAD-DAS-SWW-DDS-WSD-DAA-ASD-DA-ASSW-DAD-DSD-ADS-WSA-WSW-WS-DSSW-WSW-SWS-AAS-SAW-WDS-SWW-AWA-W-ADW-WAA-WDD-ASW-DDD-SSD-SDW-DAS-DWS-WWS-WDS-ADW-DDA-DAD-SSW-DSW-DSA-AAS-DAS--WSAA-SDS-SWD-DDW-SDD-WD-SA-SSW-DDA-WSA-DW-SSAA-SSS-DWW-WDS-ADD-ASS-AAS-WSD-SWW---DAS-SWW-AAD-A-DDA-WAD-DAS--DDAD-S-WSA-S-SDD-AAA-WAW-AAS-AAS-ADW-SSD-DSS-SDW-SAD-AAD-DSS-ASW-WAW-DAA-WWA-WAD-AWW-DAA-ADD-ASW-SWW-DA-DASW-SSA-DDA-WAS-A-SAA-ASW-AAS-DSS-WDS-W-DS-AAAS-S",
+    },
+    {
+        title = "Kiryu - Bakamitai",
+        music = "Interface\\AddOns\\LidlRoulette\\src\\Media\\Sounds\\GuitarHero\\Bakamitai.ogg",
+        bpm = 74,
+        duration = 121,
+        beatOffset = 0.029,
+        stepsPerBeat = 2,
+        chart = "----DSS-S-D-D-S-D-S-S-D-W-D-SW-AS-SA-SD-W-SSW-W-W-S-W-A-W-A-W-D-W-W-D-A-W-SSS-AAW--SW-A-WAS-W-A-W---W-AAD-A-WAS-D-S-W-AAS-A-W-AWW-D-W-S-D-SAD-A-DAA-DAS-D-WSD-DSS-S-DAS-WAS-DAA-WSS-DSW-DWA-SWA-SSS-WDA-SSD-SAW-AAA-SAS-D-D-DAW-DDD-S-SSD-S-S-S-DDA-D-D-DWD-D-S-WDA-DD-AA-SAA----------------------------",
+    },
 }

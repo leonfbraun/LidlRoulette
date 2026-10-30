@@ -11,6 +11,8 @@ local sounds = {
     "Interface\\AddOns\\LidlRoulette\\src\\Media\\Sounds\\Farts\\Fart1.ogg",
     "Interface\\AddOns\\LidlRoulette\\src\\Media\\Sounds\\Farts\\Fart2.ogg",
     "Interface\\AddOns\\LidlRoulette\\src\\Media\\Sounds\\Farts\\Fart3.ogg",
+    "Interface\\AddOns\\LidlRoulette\\src\\Media\\Sounds\\Farts\\Fart4.ogg",
+    "Interface\\AddOns\\LidlRoulette\\src\\Media\\Sounds\\Farts\\Fart5.ogg",
     "Interface\\AddOns\\LidlRoulette\\src\\Media\\Sounds\\Farts\\RipperFart.ogg",
 }
 
