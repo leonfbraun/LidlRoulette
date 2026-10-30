@@ -5,21 +5,23 @@ local ComboUi = addonTable.BayonettaComboUi
 
 local COMBO_TIMEOUT = 8
 local SPELL_HIT_WINDOW = 1.25
-local MAX_METER_POINTS = 100
+local MAX_VISIBLE_HITS = 3
 local MUSIC_FADE_SECONDS = 3
 local frame
 local musicFrame
 local variantTitle
 local pointsText
 local pointsLabel
-local medalText
+local multiplierText
 local countdownText
-local meter
 local accent
+local hitRows = {}
+local recentHits = {}
 local comboPoints = 0
 local highScore = 0
 local lastHitTime
 local pendingSpellHitUntil
+local pendingSpellID
 local activeVariant
 local isActive = false
 local isPaused = false
@@ -35,6 +37,7 @@ local variants = {
         border = { 0.78, 0.24, 0.48, 1 },
         accent = { 0.95, 0.18, 0.38, 1 },
         score = { 1, 0.78, 0.42 },
+        rowBackground = { 0.045, 0.015, 0.075, 0.94 },
     },
     [2] = {
         name = "BAYONETTA II",
@@ -44,16 +47,8 @@ local variants = {
         border = { 0.26, 0.7, 0.92, 1 },
         accent = { 0.2, 0.82, 1, 1 },
         score = { 0.72, 0.92, 1 },
+        rowBackground = { 0.01, 0.035, 0.1, 0.94 },
     },
-}
-
-local medals = {
-    { points = 80, name = "PURE PLATINUM", color = { 0.8, 0.95, 1 } },
-    { points = 50, name = "PLATINUM", color = { 0.65, 0.86, 1 } },
-    { points = 30, name = "GOLD", color = { 1, 0.78, 0.2 } },
-    { points = 15, name = "SILVER", color = { 0.82, 0.86, 0.92 } },
-    { points = 5, name = "BRONZE", color = { 0.83, 0.49, 0.28 } },
-    { points = 0, name = "STONE", color = { 0.72, 0.72, 0.76 } },
 }
 
 local function FadeMusicVolume(targetVolume, onFinished)
@@ -117,7 +112,7 @@ local function Initialize()
     end
 
     frame = CreateFrame("Frame", "LidlRouletteBayonettaComboFrame", UIParent, "BackdropTemplate")
-    frame:SetSize(380, 165)
+    frame:SetSize(430, 245)
     frame:SetPoint("RIGHT", UIParent, "RIGHT", -90, 40)
     frame:SetFrameStrata("HIGH")
     frame:SetClampedToScreen(true)
@@ -139,40 +134,68 @@ local function Initialize()
     accent:SetWidth(4)
 
     variantTitle = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    variantTitle:SetPoint("TOPLEFT", frame, "TOPLEFT", 24, -16)
-    variantTitle:SetFont("Fonts\\FRIZQT__.TTF", 15, "OUTLINE")
+    variantTitle:SetPoint("TOPLEFT", frame, "TOPLEFT", 28, -16)
+    variantTitle:SetWidth(105)
+    variantTitle:SetJustifyH("LEFT")
+    variantTitle:SetFont("Fonts\\FRIZQT__.TTF", 10, "OUTLINE")
+
+    pointsLabel = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    pointsLabel:SetPoint("TOP", frame, "TOP", 0, -14)
+    pointsLabel:SetFont("Fonts\\FRIZQT__.TTF", 22, "OUTLINE")
+    pointsLabel:SetText("Combo Points")
+    pointsLabel:SetTextColor(1, 0.94, 0.78)
+
+    multiplierText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    multiplierText:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -28, -20)
+    multiplierText:SetFont("Fonts\\FRIZQT__.TTF", 17, "OUTLINE")
+    multiplierText:SetText("x1.00")
+    multiplierText:SetTextColor(1, 0.94, 0.78)
 
     pointsText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalHuge")
-    pointsText:SetPoint("CENTER", frame, "CENTER", 0, 15)
-    pointsText:SetWidth(330)
+    pointsText:SetPoint("CENTER", frame, "CENTER", 0, 50)
+    pointsText:SetWidth(360)
     pointsText:SetJustifyH("CENTER")
-    pointsText:SetFont("Fonts\\FRIZQT__.TTF", 48, "OUTLINE")
-
-    pointsLabel = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    pointsLabel:SetPoint("TOP", pointsText, "BOTTOM", 0, -1)
-    pointsLabel:SetText("COMBO POINTS")
-    pointsLabel:SetTextColor(0.9, 0.87, 0.94)
-
-    medalText = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-    medalText:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 24, 34)
-    medalText:SetWidth(210)
-    medalText:SetJustifyH("LEFT")
-    medalText:SetFont("Fonts\\FRIZQT__.TTF", 15, "OUTLINE")
+    pointsText:SetFont("Fonts\\FRIZQT__.TTF", 47, "OUTLINE")
 
     countdownText = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-    countdownText:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -24, 34)
-    countdownText:SetFont("Fonts\\FRIZQT__.TTF", 15, "OUTLINE")
+    countdownText:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -28, 12)
+    countdownText:SetFont("Fonts\\FRIZQT__.TTF", 12, "OUTLINE")
     countdownText:SetTextColor(1, 0.4, 0.55)
 
-    meter = CreateFrame("StatusBar", nil, frame)
-    meter:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 24, 16)
-    meter:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -24, 16)
-    meter:SetHeight(6)
-    meter:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
-    meter:SetMinMaxValues(0, MAX_METER_POINTS)
-    meter:SetValue(0)
+    for index = 1, MAX_VISIBLE_HITS do
+        local row = CreateFrame("Frame", nil, frame)
+        row:SetHeight(25)
+        row:SetPoint("TOPLEFT", frame, "TOPLEFT", 31, -112 - ((index - 1) * 31))
+        row:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -31, -112 - ((index - 1) * 31))
 
-    frame:SetScript("OnEvent", function(_, event, unit, action)
+        row.background = row:CreateTexture(nil, "BACKGROUND")
+        row.background:SetAllPoints()
+        row.background:SetTexture("Interface\\Buttons\\WHITE8X8")
+
+        row.accent = row:CreateTexture(nil, "ARTWORK")
+        row.accent:SetPoint("TOPLEFT", row, "TOPLEFT", 0, 0)
+        row.accent:SetPoint("BOTTOMLEFT", row, "BOTTOMLEFT", 0, 0)
+        row.accent:SetWidth(3)
+
+        row.icon = row:CreateTexture(nil, "OVERLAY")
+        row.icon:SetSize(20, 20)
+        row.icon:SetPoint("LEFT", row, "LEFT", 8, 0)
+
+        row.label = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        row.label:SetPoint("LEFT", row.icon, "RIGHT", 8, 0)
+        row.label:SetWidth(270)
+        row.label:SetJustifyH("LEFT")
+        row.label:SetFont("Fonts\\FRIZQT__.TTF", 12, "OUTLINE")
+
+        row.points = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+        row.points:SetPoint("RIGHT", row, "RIGHT", -11, 0)
+        row.points:SetFont("Fonts\\FRIZQT__.TTF", 17, "OUTLINE")
+
+        hitRows[index] = row
+        row:Hide()
+    end
+
+    frame:SetScript("OnEvent", function(_, event, unit, eventArg, spellID)
         if not isActive or isPaused then
             return
         end
@@ -180,28 +203,23 @@ local function Initialize()
         if event == "UNIT_SPELLCAST_SUCCEEDED" then
             if unit == "player" and UnitCanAttack("player", "target") then
                 pendingSpellHitUntil = GetTime() + SPELL_HIT_WINDOW
+                pendingSpellID = spellID
             end
             return
         end
 
         if event == "UNIT_COMBAT" and unit == "target"
-            and UnitCanAttack("player", "target") and action == "WOUND" then
-            local points = pendingSpellHitUntil and GetTime() <= pendingSpellHitUntil and 2 or 1
+            and UnitCanAttack("player", "target") and eventArg == "WOUND" then
+            local isSpellHit = pendingSpellHitUntil and GetTime() <= pendingSpellHitUntil
+            local points = isSpellHit and 2 or 1
+            local hitSpellID = isSpellHit and pendingSpellID or nil
             pendingSpellHitUntil = nil
-            ComboUi:RegisterHit(points)
+            pendingSpellID = nil
+            ComboUi:RegisterHit(points, hitSpellID, isSpellHit)
         end
     end)
 
     frame:Hide()
-end
-
-local function GetMedal(points)
-    for _, medal in ipairs(medals) do
-        if points >= medal.points then
-            return medal
-        end
-    end
-    return medals[#medals]
 end
 
 local function ApplyVariant()
@@ -211,7 +229,28 @@ local function ApplyVariant()
     variantTitle:SetText(activeVariant.name .. "  /  " .. activeVariant.subtitle)
     variantTitle:SetTextColor(activeVariant.score[1], activeVariant.score[2], activeVariant.score[3])
     pointsText:SetTextColor(activeVariant.score[1], activeVariant.score[2], activeVariant.score[3])
-    meter:SetStatusBarColor(activeVariant.accent[1], activeVariant.accent[2], activeVariant.accent[3])
+    multiplierText:SetTextColor(activeVariant.score[1], activeVariant.score[2], activeVariant.score[3])
+    for _, row in ipairs(hitRows) do
+        row.background:SetColorTexture(activeVariant.rowBackground[1], activeVariant.rowBackground[2], activeVariant.rowBackground[3], activeVariant.rowBackground[4])
+        row.accent:SetColorTexture(activeVariant.accent[1], activeVariant.accent[2], activeVariant.accent[3], 1)
+    end
+end
+
+local function RefreshHitRows()
+    for index, row in ipairs(hitRows) do
+        local hit = recentHits[index]
+        if hit then
+            local icon = hit.spellID and C_Spell and C_Spell.GetSpellTexture(hit.spellID)
+            row.icon:SetTexture(icon or "Interface\\Icons\\Ability_MeleeDamage")
+            row.label:SetText(hit.isSpell and "SPELL HIT" or "AUTO ATTACK")
+            row.label:SetTextColor(activeVariant.score[1], activeVariant.score[2], activeVariant.score[3])
+            row.points:SetText("+" .. tostring(hit.points))
+            row.points:SetTextColor(activeVariant.score[1], activeVariant.score[2], activeVariant.score[3])
+            row:Show()
+        else
+            row:Hide()
+        end
+    end
 end
 
 local function ResetCombo()
@@ -221,6 +260,12 @@ local function ResetCombo()
     if frame then
         frame:SetScript("OnUpdate", nil)
         frame:Hide()
+    end
+    for index = 1, #recentHits do
+        recentHits[index] = nil
+    end
+    for _, row in ipairs(hitRows) do
+        row:Hide()
     end
     if countdownText then
         countdownText:SetText("")
@@ -240,7 +285,7 @@ local function UpdateComboCountdown()
     end
 end
 
-function ComboUi:RegisterHit(points)
+function ComboUi:RegisterHit(points, spellID, isSpell)
     if not isActive or isPaused then
         return
     end
@@ -255,11 +300,12 @@ function ComboUi:RegisterHit(points)
     highScore = math.max(highScore, comboPoints)
     lastHitTime = GetTime()
 
-    local medal = GetMedal(comboPoints)
-    pointsText:SetText(tostring(comboPoints))
-    medalText:SetText(medal.name)
-    medalText:SetTextColor(medal.color[1], medal.color[2], medal.color[3])
-    meter:SetValue(math.min(comboPoints, MAX_METER_POINTS))
+    pointsText:SetText(string.format("%04d", comboPoints))
+    table.insert(recentHits, 1, { points = points, spellID = spellID, isSpell = isSpell })
+    while #recentHits > MAX_VISIBLE_HITS do
+        table.remove(recentHits)
+    end
+    RefreshHitRows()
     countdownText:SetText(string.format("COMBO %.1fs", COMBO_TIMEOUT))
     frame:Show()
     if not wasVisible then
