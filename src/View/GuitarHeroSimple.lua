@@ -57,7 +57,7 @@ local active = false
 local musicStarted = false
 
 local function UpdateScore()
-    scoreText:SetText(string.format("%05d    COMBO %d", score, combo))
+    scoreText:SetText(string.format("%05d / ZIEL %05d    COMBO %d", score, song and song.targetScore or 0, combo))
 end
 
 local function FadeBackgroundMusic(targetVolume, onFinished)
@@ -187,7 +187,15 @@ local function StopGame(showResult)
         UpdateScore()
         print("|cff2674cc[L|cffff0000i|rDL Roulette]|r Guitar Hero: " .. song.title ..
             " beendet. Score: " .. score .. " | Treffer: " .. hits .. " | Verfehlt: " .. misses)
-        addonTable:OnLocalTimerEvent(challengeID, "GUITARHEROFINISHED", score, song.title)
+        local taxSilver = score < song.targetScore and (UnitLevel("player") or 1) * 2 or 0
+        addonTable:OnLocalTimerEvent(
+            challengeID,
+            "GUITARHEROFINISHED",
+            score,
+            song.title,
+            song.targetScore,
+            taxSilver
+        )
     else
         frame:Hide()
     end
@@ -433,6 +441,7 @@ function GuitarHeroUi:Start(challengeIDArg)
             and type(candidate.stepsPerBeat) == "number" and candidate.stepsPerBeat >= 1
             and candidate.stepsPerBeat <= 8 and candidate.stepsPerBeat == math.floor(candidate.stepsPerBeat)
             and type(candidate.chart) == "string" and #candidate.chart > 0 and #candidate.chart <= 1024
+            and type(candidate.targetScore) == "number" and candidate.targetScore > 0
             and type(candidate.music) == "string" and candidate.music ~= "" then
             local candidateChart = candidate.chart:gsub("%s", ""):upper()
             if candidateChart:match("^[WASD%-]+$") then

@@ -48,7 +48,7 @@ function AnnouncementUi:Initialize()
     announcementFrame:Hide()
 end
 
-function AnnouncementUi:ShowAnnouncement(playerName, challengerName, level, challengeID, command, comboHighScore, challengeSong)
+function AnnouncementUi:ShowAnnouncement(playerName, challengerName, level, challengeID, command, comboHighScore, challengeSong, targetScore, taxSilver)
     local announcementMessage
     if command == "DEATH" then
         announcementMessage = "|cffffffff" .. playerName .. "|r ist mit Level " .. tostring(level) .. " gestorben"
@@ -72,7 +72,14 @@ function AnnouncementUi:ShowAnnouncement(playerName, challengerName, level, chal
         announcementMessage = announcementMessage .. "\nCombo-Highscore: |cffffb52e" .. tostring(comboHighScore) .. scoreUnit .. "|r"
     elseif comboHighScore ~= nil and command == "GUITARHEROFINISHED" then
         announcementMessage = announcementMessage .. "\nSong: |cffffb52e" .. tostring(challengeSong or "Unbekannt") ..
-            "|r\nScore: |cffffb52e" .. tostring(comboHighScore) .. " Punkte|r"
+            "|r\nScore: |cffffb52e" .. tostring(comboHighScore) ..
+            (targetScore and (" / " .. tostring(targetScore)) or "") .. " Punkte|r"
+        if targetScore and comboHighScore >= targetScore then
+            announcementMessage = announcementMessage .. "\nZielscore erreicht. Keine Steuern!"
+        elseif targetScore then
+            announcementMessage = announcementMessage .. "\nZielscore verfehlt. Steuern: |cffffb52e" ..
+                tostring(taxSilver or (level * 2)) .. " Silber|r an die Gilde zahlen (Level x2)."
+        end
     end
     
     playerAnnouncementText:SetText(announcementMessage)

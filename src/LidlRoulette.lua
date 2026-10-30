@@ -136,24 +136,24 @@ function addonTable:OnLocalDuelLoss(winnerName, loserName)
     end)
 end
 
-function addonTable:OnLocalTimerEvent(challengeID, command, comboHighScore, challengeSong)
+function addonTable:OnLocalTimerEvent(challengeID, command, comboHighScore, challengeSong, targetScore, taxSilver)
     local fullName = GetPlayerFullName()
     local playerLevel = UnitLevel("player") or 1
     local eventID = self:CreateEventID()
 
     self.ProcessedEvents[eventID] = true
-    self.AnnouncementUi:ShowAnnouncement(fullName, nil, playerLevel, challengeID, command, comboHighScore, challengeSong)
-    self.Communication.SendMessage(command, fullName, playerLevel, challengeID, eventID, nil, comboHighScore, challengeSong)
+    self.AnnouncementUi:ShowAnnouncement(fullName, nil, playerLevel, challengeID, command, comboHighScore, challengeSong, targetScore, taxSilver)
+    self.Communication.SendMessage(command, fullName, playerLevel, challengeID, eventID, nil, comboHighScore, challengeSong, targetScore, taxSilver)
 end
 
-function addonTable:OnRemoteEventRecieved(playerName, level, challengeID, eventID, challengerName, command, comboHighScore, challengeSong)
+function addonTable:OnRemoteEventRecieved(playerName, level, challengeID, eventID, challengerName, command, comboHighScore, challengeSong, targetScore, taxSilver)
     if self.ProcessedEvents[eventID] then
         return
     end
 
     self.ProcessedEvents[eventID] = true
 
-    self.AnnouncementUi:ShowAnnouncement(playerName, challengerName, level, challengeID, command, comboHighScore, challengeSong)
+    self.AnnouncementUi:ShowAnnouncement(playerName, challengerName, level, challengeID, command, comboHighScore, challengeSong, targetScore, taxSilver)
 end
 
 
