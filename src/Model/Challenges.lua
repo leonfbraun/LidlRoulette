@@ -35,6 +35,7 @@ addonTable.Challenges = {
     { rarity= "Rare", tags={ "Negativ" }, title="Bisschen Kleingeld?", description="Bettle bei einem Spieler für ein bisschen Kleingeld. Dein Ertrag kommt in die Gildenbank"},
     { rarity= "Rare", tags={ "Negativ" }, title="Prost!", description="Besorg dir was alkohilisches zum Trinken und sauf dich voll!" },
     { rarity= "Rare", tags={ "Positiv", "Clanker" }, timeInSeconds=300, devilMayCryCombo=true, title="Devil May Cry", description="Treffer an Monstern lassen deinen Combo-Meter steigen. Knacke den Highscore!" },
+    { rarity= "Rare", tags={ "Positiv", "Clanker" }, timeInSeconds=300, bayonettaCombo=true, title="Bayonetta", description="Sammle in 5 Minuten Combo Points: Auto-Attacks geben 1 CP, Zaubertreffer näherungsweise 2 CP. Die Combo bricht nach 8 Sekunden ohne Treffer ab." },
     { rarity= "Rare", tags={ "Positiv" }, title="For me? *blushes*", description="Deine Mitspieler schenken dir die Mats für ein von dir herstellbares Item!"},
     { rarity= "Rare", tags={ "Negativ", "Sport" }, title= "Dann doch lieber 10 Hs", description="Mache 3 Burpees"},
     { rarity= "Rare", tags={ "Positiv" }, title= "Story Time", description="Erzähle den anderen eine Geschichte :)"},

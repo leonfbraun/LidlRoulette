@@ -143,6 +143,8 @@ local function EndChallengeTimer(command)
     timerFrame:SetScript("OnUpdate", nil)
     timerFrame:Hide()
     local comboHighScore = addonTable.DevilMayCryComboUi.Stop()
+    local bayonettaHighScore = addonTable.BayonettaComboUi.Stop()
+    comboHighScore = comboHighScore or bayonettaHighScore
     addonTable.Keybindings.Stop()
     addonTable.PopupChallengeUi.Stop()
     addonTable:OnLocalTimerEvent(challengeID, command, comboHighScore)
@@ -176,6 +178,7 @@ function TimerUi.StartChallengeTimer(challengeID)
             paused = false
             addonTable.PopupChallengeUi.Resume()
             addonTable.DevilMayCryComboUi.Resume()
+            addonTable.BayonettaComboUi.Resume()
             self:SetText("Pause")
         else
             remaining = math.max(0, duration - (GetTime() - startTime))
@@ -186,6 +189,7 @@ function TimerUi.StartChallengeTimer(challengeID)
             paused = true
             addonTable.PopupChallengeUi.Pause()
             addonTable.DevilMayCryComboUi.Pause()
+            addonTable.BayonettaComboUi.Pause()
             self:SetText("Fortsetzen")
         end
     end)
@@ -206,6 +210,9 @@ function TimerUi.StartChallengeTimer(challengeID)
     end
     if challenge.devilMayCryCombo then
         addonTable.DevilMayCryComboUi.Start()
+    end
+    if challenge.bayonettaCombo then
+        addonTable.BayonettaComboUi.Start()
     end
     timerFrame:SetScript("OnUpdate", function(self)
         if paused then

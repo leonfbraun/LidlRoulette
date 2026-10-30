@@ -65,7 +65,9 @@ function AnnouncementUi:ShowAnnouncement(playerName, challengerName, level, chal
     end
 
     if comboHighScore ~= nil and (command == "TIMERFINISHED" or command == "TIMERCANCELED") then
-        announcementMessage = announcementMessage .. "\nCombo-Highscore: |cffffb52e" .. tostring(comboHighScore) .. " Treffer|r"
+        local challenge = addonTable.Roulette.GetChallenge(challengeID)
+        local scoreUnit = challenge and challenge.bayonettaCombo and " CP" or " Treffer"
+        announcementMessage = announcementMessage .. "\nCombo-Highscore: |cffffb52e" .. tostring(comboHighScore) .. scoreUnit .. "|r"
     end
     
     playerAnnouncementText:SetText(announcementMessage)
