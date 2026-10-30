@@ -13,6 +13,7 @@ local LANE_COLORS = {
 local COUNTDOWN_SECONDS = 3
 local HIT_WINDOW = 0.24
 local TICK_SECONDS = 0.1
+local MUSIC_FADE_SECONDS = 0.8
 local NOTE_TRAVEL_SECONDS = 1.1
 local NOTE_FALL_DISTANCE = 260
 local LANE_HIT_Y = 55
@@ -31,6 +32,9 @@ local markerPool = {}
 local activeMarkers = {}
 local closeButton
 local ticker
+local musicFadeTicker
+local songSoundHandle
+local musicVolumeBeforeGame
 local sessionID = 0
 local song
 local challengeID
@@ -54,6 +58,38 @@ local musicStarted = false
 
 local function UpdateScore()
     scoreText:SetText(string.format("%05d    COMBO %d", score, combo))
+end
+
+local function FadeBackgroundMusic(targetVolume, onFinished)
+    if musicFadeTicker then
+        musicFadeTicker:Cancel()
+        musicFadeTicker = nil
+    end
+
+    local startVolume = tonumber(GetCVar("Sound_MusicVolume"))
+    if startVolume == nil then
+        if onFinished then
+            onFinished()
+        end
+        return
+    end
+
+    local startedAt = GetTime()
+    musicFadeTicker = C_Timer.NewTicker(0.05, function()
+        local progress = math.min((GetTime() - startedAt) / MUSIC_FADE_SECONDS, 1)
+        local volume = startVolume + (targetVolume - startVolume) * progress
+        SetCVar("Sound_MusicVolume", string.format("%.3f", volume))
+
+        if progress >= 1 then
+            if musicFadeTicker then
+                musicFadeTicker:Cancel()
+            end
+            musicFadeTicker = nil
+            if onFinished then
+                onFinished()
+            end
+        end
+    end)
 end
 
 local function ShowLaneFeedback(key, wasHit)
@@ -121,7 +157,15 @@ local function StopGame(showResult)
         ticker = nil
     end
     if musicStarted then
-        StopMusic()
+        if songSoundHandle then
+            StopSound(songSoundHandle)
+            songSoundHandle = nil
+        end
+    end
+    if musicVolumeBeforeGame ~= nil then
+        local originalVolume = musicVolumeBeforeGame
+        musicVolumeBeforeGame = nil
+        FadeBackgroundMusic(originalVolume)
     end
     musicStarted = false
     frame:SetPropagateKeyboardInput(true)
@@ -201,7 +245,17 @@ local function UpdateGame()
 
         musicStarted = true
         startedAt = GetTime()
-        PlayMusic(song.music)
+        local soundStarted
+        soundStarted, songSoundHandle = PlaySoundFile(song.music, "SFX")
+        if soundStarted then
+            musicVolumeBeforeGame = tonumber(GetCVar("Sound_MusicVolume"))
+            if musicVolumeBeforeGame ~= nil and musicVolumeBeforeGame > 0 then
+                FadeBackgroundMusic(0)
+            end
+        else
+            songSoundHandle = nil
+            print("|cffff0000[Lidl Roulette]|r Song konnte nicht abgespielt werden: " .. song.title)
+        end
         statusText:SetText("Drücke die Taste, wenn der fallende Marker W A S D erreicht")
         return
     end
