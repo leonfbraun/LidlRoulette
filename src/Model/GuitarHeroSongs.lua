@@ -9,7 +9,7 @@ addonTable.GuitarHeroSongs = {
         beatOffset = 0.163,
         stepsPerBeat = 2,
         chart = "------A---S---A---S---A---S---AS--S-W-A-D-ASD-A-D-SSW-A-D-SSD-A-D-SWD-S-S-SDW-A-W-SSW-A-W-SSW-A-W-SSW-A-W-SSS-ADD-SSD-AWD-SSD-A-S-SSD-A-DWS-S-A-D-ASW-A-W-SDD-A-D-SDD-A-S-SAD-A-D-DDW-A-D-S-D-A-WWS-W-A-W-SSW-A-W-SDW-A-D-ASD-SWW-SSD-DWD-SSD-AWD-SSD-A-D-SSD-A-DDA-W-D-D-S-W-ADD-S-D-D-D-ASW-A-D-AAD-S-D-S-W-A-W-A-A-A-W-S-W-A-W-SDW-A-W-AAW-A-W-A-A-A-W-D-W-S---------",
-        difficulty= "hard",
+        difficulty= "medium",
     },
     {
         title = "Leni Wöss - Auro",
