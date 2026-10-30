@@ -147,6 +147,7 @@ local function EndChallengeTimer(command)
     comboHighScore = comboHighScore or bayonettaHighScore
     addonTable.Keybindings.Stop()
     addonTable.PopupChallengeUi.Stop()
+    addonTable.FartSoundsUi.Stop()
     addonTable:OnLocalTimerEvent(challengeID, command, comboHighScore)
 end
 
@@ -179,6 +180,7 @@ function TimerUi.StartChallengeTimer(challengeID)
             addonTable.PopupChallengeUi.Resume()
             addonTable.DevilMayCryComboUi.Resume()
             addonTable.BayonettaComboUi.Resume()
+            addonTable.FartSoundsUi.Resume()
             self:SetText("Pause")
         else
             remaining = math.max(0, duration - (GetTime() - startTime))
@@ -190,6 +192,7 @@ function TimerUi.StartChallengeTimer(challengeID)
             addonTable.PopupChallengeUi.Pause()
             addonTable.DevilMayCryComboUi.Pause()
             addonTable.BayonettaComboUi.Pause()
+            addonTable.FartSoundsUi.Pause()
             self:SetText("Fortsetzen")
         end
     end)
@@ -213,6 +216,9 @@ function TimerUi.StartChallengeTimer(challengeID)
     end
     if challenge.bayonettaCombo then
         addonTable.BayonettaComboUi.Start()
+    end
+    if challenge.fartSounds then
+        addonTable.FartSoundsUi.Start()
     end
     timerFrame:SetScript("OnUpdate", function(self)
         if paused then

@@ -15,6 +15,7 @@ src/View/Announcement.lua
 src/View/ChallengeRoulette.lua
 src/View/DevilMayCryCombo.lua
 src/View/BayonettaCombo.lua
+src/View/FartSounds.lua
 src/View/Overview.lua
 src/View/Settings.lua
 src/View/PopupChallenge.lua
