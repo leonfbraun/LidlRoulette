@@ -9,6 +9,10 @@ schedulerFrame:SetPoint("TOPLEFT", UIParent, "TOPLEFT")
 local popupFrames = {}
 local activePopups = {}
 local activePopupOrder = {}
+local popupSounds = {
+    "Interface\\AddOns\\LidlRoulette\\src\\Media\\Sounds\\Popups\\Popup1.ogg",
+    "Interface\\AddOns\\LidlRoulette\\src\\Media\\Sounds\\Popups\\Popup2.ogg",
+}
 local activePopupCount = 0
 local challengeActive = false
 local challengePaused = false
@@ -154,7 +158,7 @@ local popupFont = "Fonts\\ARIALN.TTF"
 
 local function ScheduleNextPopup()
     if challengeActive then
-        nextPopupAt = GetTime() + math.random(8, 20)
+        nextPopupAt = GetTime() + math.random(5, 12)
     end
 end
 
@@ -403,6 +407,7 @@ local function ShowRandomPopup()
     popupFrame.stackSize = GetRandomPopupSize()
     PositionPopup(popupFrame)
     popupFrame:Show()
+    PlaySoundFile(popupSounds[math.random(#popupSounds)], "SFX")
     activePopups[popupFrame] = true
     table.insert(activePopupOrder, popupFrame)
     activePopupCount = activePopupCount + 1

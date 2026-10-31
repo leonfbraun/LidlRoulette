@@ -26,6 +26,7 @@ local isActive = false
 local isPaused = false
 local musicVolumeBeforeCombo
 local comboMusicPlaying = false
+local comboMusicHandle
 
 local variants = {
     [1] = {
@@ -78,31 +79,49 @@ local function StartComboMusic()
     musicFrame = musicFrame or CreateFrame("Frame")
     musicFrame:SetScript("OnUpdate", nil)
 
+    local soundStarted
+    soundStarted, comboMusicHandle = PlaySoundFile(activeVariant.music, "SFX")
+    if not soundStarted then
+        comboMusicHandle = nil
+        if musicVolumeBeforeCombo ~= nil then
+            local originalVolume = musicVolumeBeforeCombo
+            FadeMusicVolume(originalVolume, function()
+                if not comboMusicPlaying then
+                    musicVolumeBeforeCombo = nil
+                end
+            end)
+        end
+        return
+    end
+
     if musicVolumeBeforeCombo == nil then
         musicVolumeBeforeCombo = tonumber(GetCVar("Sound_MusicVolume"))
     end
-    if musicVolumeBeforeCombo == nil then
-        return
-    end
-
-    SetCVar("Sound_MusicVolume", "0")
-    PlayMusic(activeVariant.music)
     comboMusicPlaying = true
-    FadeMusicVolume(musicVolumeBeforeCombo)
+    if musicVolumeBeforeCombo ~= nil and musicVolumeBeforeCombo > 0 then
+        FadeMusicVolume(0)
+    end
 end
 
 local function StopComboMusic()
-    if not comboMusicPlaying or musicVolumeBeforeCombo == nil then
+    if not comboMusicPlaying then
         return
     end
 
+    if comboMusicHandle then
+        StopSound(comboMusicHandle)
+        comboMusicHandle = nil
+    end
+    comboMusicPlaying = false
+
     local originalVolume = musicVolumeBeforeCombo
-    FadeMusicVolume(0, function()
-        StopMusic()
-        SetCVar("Sound_MusicVolume", tostring(originalVolume))
-        musicVolumeBeforeCombo = nil
-        comboMusicPlaying = false
-    end)
+    if originalVolume ~= nil then
+        FadeMusicVolume(originalVolume, function()
+            if not comboMusicPlaying then
+                musicVolumeBeforeCombo = nil
+            end
+        end)
+    end
 end
 
 local function Initialize()
