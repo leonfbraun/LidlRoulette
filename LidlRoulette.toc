@@ -1,4 +1,4 @@
-## Interface: 16001, 120000
+## Interface: 16001, 120105
 ## Title: Lidl Roulette
 ## Notes: This addon randomly selects a challenge for the player to complete.
 ## Author: Leon Braun
