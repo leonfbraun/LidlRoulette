@@ -59,7 +59,9 @@ function ChallengeRouletteUi:Initialize()
     closeButton:SetText("Los!")
     closeButton:SetScript("OnClick", function()
         local challenge = addonTable.Roulette.GetChallenge(ChallengeRouletteUi.targetChallengeID)
-        if challenge and type(challenge.timeInSeconds) == "number" and challenge.timeInSeconds > 0 then
+        if challenge and challenge.guitarHero then
+            addonTable.GuitarHeroUi:Start(ChallengeRouletteUi.targetChallengeID)
+        elseif challenge and type(challenge.timeInSeconds) == "number" and challenge.timeInSeconds > 0 then
             addonTable.TimerUi.StartChallengeTimer(ChallengeRouletteUi.targetChallengeID)
         end
         frame:Hide()
@@ -107,6 +109,9 @@ function ChallengeRouletteUi:ShowChallenge(playerName, level, challengeID, chall
     elseif challengeReason == "duel" then 
         titleText:SetText("Duell verloren :(")
         playerText:SetText(playerName .. " wurde mit Level " ..  tostring(level) .. " im Duell besiegt")
+    elseif challengeReason == "test" then
+        titleText:SetText("CHALLENGE-TEST")
+        playerText:SetText("Test für Challenge-ID " .. tostring(challengeID))
     end
     
     wheelText:SetText("● ● ●")

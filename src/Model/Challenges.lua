@@ -9,7 +9,7 @@ addonTable.RarityWeights = {
     { rarity="poor", weight=0 },
 }
 
-addonTable.ChallengeTags = { "Positiv", "Negativ", "Sport" }
+addonTable.ChallengeTags = { "Positiv", "Negativ", "Sport", "Clanker" }
 
 addonTable.Challenges = {
     { rarity= "Common", tags={ "Negativ", "Sport" }, title= "Liegestütze", description="Mache sofort 10 Liegestütze!"},
@@ -20,31 +20,39 @@ addonTable.Challenges = {
     { rarity= "Common", tags={ "Negativ"}, timeInSeconds=600, title="POV", description="Spiele die nächsten 10 Minuten in First Person" },
     { rarity= "Common", tags={ "Negativ" }, title="Grindset", description="Steigere einen deiner Berufe um 5 Level" },
     { rarity= "Common", tags={ "Positiv" }, timeInSeconds=900, title="Lidl-DJ", description="Du bist jetzt für 15 Minuten DJ. Spiele mit dem Lidl Einkaufshits bot ein paar Banger ab"},
+    { rarity= "Common", tags={ "Negativ", "Sport" }, title= "Get low", description="Mache 10 Bodyweight Squats, Full ROM"},
+    { rarity= "Common", tags={ "Negativ", "Clanker" }, guitarHero=true, guitarHeroDifficulty="easy", title="WoW-Hero: Easy", description="Spiele einen zufälligen Song der Schwierigkeitsstufe Easy in WoW-Hero. Verfehlst du den Zielscore, zahle Steuern in Höhe deines Levels x2 in Silber an die Gilde."},
+    { rarity= "Uncommon", tags={ "Negativ", "Clanker" }, timeInSeconds=600, keybindingShuffle="wasd", title="Gehfehler", description="Für die nächsten 10 Minuten läufst du komisch..." },
+    { rarity= "Uncommon", tags={ "Negativ", "Clanker" }, timeInSeconds=300, popupChallenge=true, title="Virus", description="Das hättest du lieber nicht herunterladen sollen" },
+    { rarity= "Uncommon", tags={ "Negativ", "Clanker" }, timeInSeconds=300, fartSounds=true, title="Stinky-Abilities", description="Für die nächsten 5 Minuten stinkt es, wenn du eine Fähigkeit benutzt" },
     { rarity= "Uncommon", tags={ "Positiv" }, timeInSeconds=120, title="Bob Ross", description="Male innerhalb 2 Minuten eine kleine World of Warcraft Impression in Paint und poste sie auf Discord" },
     { rarity= "Uncommon", tags={ "Negativ" }, title= "Shots, shots, shots!", description="Trinke einen Shot deiner Wahl"},
-    { rarity= "Uncommon", tags={ "Negativ", "Sport" }, title= "Get low", description="Mache 10 Bodyweight Squats, Full ROM"},
     { rarity= "Uncommon", tags={ "Negativ", "Sport" }, title= "I'm planking", description="Mache für 45 Sekunden eine Plank deiner Wahl (Front, Side, Reverse)"},
     { rarity= "Uncommon", tags={ "Negativ" }, title="Hell's Kitchen", description="Koche für alle eine leckere Mahlzeit. Deine Mitspieler bewerten deine Kochkünste" },
     { rarity= "Uncommon", tags={ "Negativ" }, timeInSeconds=600, title="Nice-Guy", description="Begrüße ALLE Spieler*innen den du in den nächsten 10 Minunten begegnest" },
     { rarity= "Uncommon", tags={ "Negativ" }, title="Fischverkäufer", description="Angle einen Fisch und verkauf ihn an einen anderen Spieler. Dein Ertrag kommt in die Gildenbank"},
     { rarity= "Uncommon", tags={ "Negativ" }, title= "Feet", description="Schicke Leon Matthes ein Bild deiner Füße"},
+    { rarity= "Uncommon", tags={ "Negativ", "Sport" }, title= "Dann doch lieber 10 Hs", description="Mache 3 Burpees"},
+    { rarity= "Uncommon", tags={ "Negativ", "Clanker" }, guitarHero=true, guitarHeroDifficulty="medium", title="WoW-Hero: Medium", description="Spiele einen zufälligen Song der Schwierigkeitsstufe Medium in WoW-Hero. Verfehlst du den Zielscore, zahle Steuern in Höhe deines Levels x2 in Silber an die Gilde."},
     { rarity= "Rare", tags={ "Negativ"}, title= "Tax-Time!", description="Zahle Steuern an deine Gilde (Dein Level x2 in Silber)"},
     { rarity= "Rare", tags={ "Negativ" }, title="Bisschen Kleingeld?", description="Bettle bei einem Spieler für ein bisschen Kleingeld. Dein Ertrag kommt in die Gildenbank"},
-    { rarity= "Rare", tags={ "Negativ" }, title="Prost!", description="Sauf dich voll! (ingame)" },
+    { rarity= "Rare", tags={ "Negativ" }, title="Prost!", description="Besorg dir was alkohilisches zum Trinken und sauf dich voll!" },
+    { rarity= "Rare", tags={ "Positiv", "Clanker" }, timeInSeconds=300, devilMayCryCombo=true, title="Devil May Cry", description="Für 5 Minuten lassen Treffer an Monstern deinen Combo-Meter steigen. Eine Timerpause bricht die laufende Combo ab. Knacke den Highscore!" },
+    { rarity= "Rare", tags={ "Positiv", "Clanker" }, timeInSeconds=300, bayonettaCombo=true, title="Witchtime", description="Sammle in 5 Minuten Combo Points. Eine Timerpause bricht die laufende Combo ab. Schlage den Highscore!" },
     { rarity= "Rare", tags={ "Positiv" }, title="For me? *blushes*", description="Deine Mitspieler schenken dir die Mats für ein von dir herstellbares Item!"},
-    { rarity= "Rare", tags={ "Negativ", "Sport" }, title= "Dann doch lieber 10 Hs", description="Mache 3 Burpees"},
     { rarity= "Rare", tags={ "Positiv" }, title= "Story Time", description="Erzähle den anderen eine Geschichte :)"},
     { rarity= "Rare", tags={ "Negativ" }, timeInSeconds=600,  title= "/Muted", description="Sprich die nächsten 10 Minuten nur noch über /say (kein Voice-Chat)"},
-    { rarity= "Rare", tags={ "Negativ" }, timeInSeconds=120, title= "Mindfuck", description="Spiele für 2 Minuten mit umgedrehter Maus."},
-    { rarity= "Rare", tags={ "Negativ" }, timeInSeconds=1200, title= "Blank ziehen", description="Zieh deinem Charakter für die nächsten 20 Minuten Brust und Hose aus"},
+    { rarity= "Rare", tags={ "Negativ", "Clanker" }, guitarHero=true, guitarHeroDifficulty="hard", title="WoW-Hero: Hard", description="Spiele einen zufälligen Song der Schwierigkeitsstufe Hard in WoW-Hero. Verfehlst du den Zielscore, zahle Steuern in Höhe deines Levels x2 in Silber an die Gilde."},
+    { rarity= "Epic", tags={ "Negativ" }, timeInSeconds=120, title= "Mindfuck", description="Spiele für 2 Minuten mit umgedrehter Maus."},
+    { rarity= "Epic", tags={ "Negativ", "Clanker" }, timeInSeconds=300, keybindingShuffle="actionbuttons", title="Switcharoo", description="Die Tastenbelegung deiner Aktionsleiste ist für 5 Minuten vertauscht" },
     { rarity= "Epic", tags={ "Positiv" }, title= "Zeit für ein D-d-duell", description="Fordere einen Spieler zu einem Duell heraus. Gewinnst du, erhältst du vom Verlierer Steuern (Lvl x2 in Silber). Verlierst du, zahlst du Steuern in die Gildenbank"},
-    { rarity= "Epic", tags={ "Negativ" }, timeInSeconds=300, title= "Console-Gamer", description="Spiel die nächsten 20 Minuten mit Controller"},
+    { rarity= "Epic", tags={ "Negativ" }, timeInSeconds=900, title= "Console-Gamer", description="Spiel die nächsten 15 Minuten mit Controller"},
     { rarity= "Epic", tags={ "Negativ" }, timeInSeconds=300, title= "Phasmo", description="Phasmo an dei Eier (Spiele die nächsten 5 Minuten mit nur einer Hand)"},
     { rarity= "Epic", tags={ "Positiv" }, title= "Shotcaller", description="Du bestimmst mit deinem nächsten Call was gemacht wird. Dein Call ist Gesetz!"},
     { rarity= "Epic", tags={ "Positiv", "Sport" }, title= "Sally goes up", description="Wenn du einen Stehschreibtisch hast, fahre ihn bis zum nächsten Event hoch. Wenn nicht, stehe auf und versuche 60 Sekunden mit durchgestreckten Beinen deine Zehen zu erreichen."},
-    { rarity= "Legendary", tags={ "Positiv" }, title= "Mom!", description="Ruf deine Mutter/deinen Vater an, falls das letzte Mal mehr als 1 Woche her ist."},
-    { rarity= "Legendary", tags={ "Negativ"}, title="Time to say goodbye", description= "Verabschiede dich von einem deiner Ausrüstungsgegenständen (verkauf es!)"},
-    { rarity= "Legendary", tags={ "Positiv" }, title= "JACKPOT!", description="Du bist reich! Hol dir den Gilden-Jackpot ab!"}
+    { rarity= "Legendary", tags={ "Negativ" }, timeInSeconds=1200, title= "Die Socken bleiben an", description="Zieh deinem Charakter für die nächsten 20 Minuten alles außer die Schuhe aus"},
+    { rarity= "Legendary", tags={ "Negativ"}, title="Time to say goodbye", description= "Verabschiede dich von einem deiner aktuell getragenen Ausrüstungsgegenständen und verkauf es"},
+    { rarity= "Legendary", tags={ "Positiv" }, title= "JACKPOT!", description="Du bist reich! Hol dir den Gilden-Jackpot ab!"},
 }
 
 local knownTags = {}

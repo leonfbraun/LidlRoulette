@@ -33,13 +33,35 @@ local function CreateEnableRouletteCheckbox()
     end)
 
     table.insert(SettingsUi.panel.checkboxes, checkbox)
+    SettingsUi.enableRouletteCheckbox = checkbox
+end
+
+local function CreateEnableClankerChallengesCheckbox()
+    local checkbox = CreateFrame("CheckButton", nil, SettingsUi.panel, "UICheckButtonTemplate")
+    checkbox:SetPoint("TOPLEFT", SettingsUi.panel, "TOPLEFT", 16, -116)
+    checkbox:SetChecked(LidlRouletteDB.settings.areClankerChallengesEnabled)
+
+    local label = checkbox:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    label:SetPoint("LEFT", checkbox, "RIGHT", 4, 0)
+    label:SetText("Clanker-Challenges erlauben")
+
+    checkbox:SetScript("OnClick", function(self)
+        local isChecked = self:GetChecked()
+        LidlRouletteDB.settings.areClankerChallengesEnabled = isChecked
+        print("|cff2674cc[L|cffff0000i|rDL Roulette]|r Clanker-Challenges " .. (isChecked and "aktiviert" or "deaktiviert"))
+    end)
+
+    table.insert(SettingsUi.panel.checkboxes, checkbox)
+    SettingsUi.enableClankerChallengesCheckbox = checkbox
 end
 
 CreatePanelHeading()
 CreateEnableRouletteCheckbox()
+CreateEnableClankerChallengesCheckbox()
 
 SettingsUi.panel:SetScript("OnShow", function()
-    SettingsUi.panel.checkboxes[1]:SetChecked(LidlRouletteDB.settings.isRouletteEnabled)
+    SettingsUi.enableRouletteCheckbox:SetChecked(LidlRouletteDB.settings.isRouletteEnabled)
+    SettingsUi.enableClankerChallengesCheckbox:SetChecked(LidlRouletteDB.settings.areClankerChallengesEnabled)
 end)
 
 local settingsCategory

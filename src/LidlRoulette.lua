@@ -19,9 +19,22 @@ local function EnsureSavedSettings()
     if LidlRouletteDB.settings.isRouletteEnabled == nil then
         LidlRouletteDB.settings.isRouletteEnabled = true
     end
+
+    if LidlRouletteDB.settings.areClankerChallengesEnabled == nil then
+        LidlRouletteDB.settings.areClankerChallengesEnabled = true
+    end
 end
 
 EnsureSavedSettings()
+
+local function GetPlayerFullName()
+    local firstName, secondName = UnitName("player")
+    if secondName then
+        return firstName .. " " .. secondName
+    end
+
+    return firstName
+end
 
 local savedVariablesFrame = CreateFrame("Frame")
 savedVariablesFrame:RegisterEvent("ADDON_LOADED")
@@ -45,8 +58,7 @@ end
 
 -- creates a unique event ID based on the player's name, current timestamp, and a random number
 function addonTable:CreateEventID()
-    local firstName, lastName = UnitName("player")
-    local fullName = firstName .. " " .. lastName
+    local fullName = GetPlayerFullName()
     local timestamp = time()
     local randomNumber = math.random(100000, 999999)
 
@@ -54,8 +66,7 @@ function addonTable:CreateEventID()
 end
 
 function addonTable:OnLocalLevelUp(playerLevel)
-    local firstName, lastName = UnitName("player")
-    local fullName = firstName .. " " .. lastName
+    local fullName = GetPlayerFullName()
 
     local eventID = self:CreateEventID()
     local challengeID
@@ -78,8 +89,7 @@ function addonTable:OnLocalLevelUp(playerLevel)
 end
 
 function addonTable:OnLocalDeath()
-    local firstName, lastName = UnitName("player")
-    local fullName = firstName .. " " .. lastName
+    local fullName = GetPlayerFullName()
 
     local playerLevel = UnitLevel("player") or 1
 
@@ -126,31 +136,29 @@ function addonTable:OnLocalDuelLoss(winnerName, loserName)
     end)
 end
 
-function addonTable:OnLocalTimerEvent(challengeID, command)
-    local firstName, lastName = UnitName("player")
-    local fullName = firstName .. " " .. lastName
+function addonTable:OnLocalTimerEvent(challengeID, command, comboHighScore, challengeSong, targetScore, taxSilver)
+    local fullName = GetPlayerFullName()
     local playerLevel = UnitLevel("player") or 1
     local eventID = self:CreateEventID()
 
     self.ProcessedEvents[eventID] = true
-    self.AnnouncementUi:ShowAnnouncement(fullName, nil, playerLevel, challengeID, command)
-    self.Communication.SendMessage(command, fullName, playerLevel, challengeID, eventID)
+    self.AnnouncementUi:ShowAnnouncement(fullName, nil, playerLevel, challengeID, command, comboHighScore, challengeSong, targetScore, taxSilver)
+    self.Communication.SendMessage(command, fullName, playerLevel, challengeID, eventID, nil, comboHighScore, challengeSong, targetScore, taxSilver)
 end
 
-function addonTable:OnRemoteEventRecieved(playerName, level, challengeID, eventID, challengerName, command)
+function addonTable:OnRemoteEventRecieved(playerName, level, challengeID, eventID, challengerName, command, comboHighScore, challengeSong, targetScore, taxSilver)
     if self.ProcessedEvents[eventID] then
         return
     end
 
     self.ProcessedEvents[eventID] = true
 
-    self.AnnouncementUi:ShowAnnouncement(playerName, challengerName, level, challengeID, command)
+    self.AnnouncementUi:ShowAnnouncement(playerName, challengerName, level, challengeID, command, comboHighScore, challengeSong, targetScore, taxSilver)
 end
 
 
 function addonTable.handleDuelResult(message)
-    local firstName, lastName = UnitName("player")
-    local fullName = firstName .. " " .. lastName
+    local fullName = GetPlayerFullName()
 
     local winner, loser = message:match(addonTable.patternKnockout)
 
@@ -181,6 +189,7 @@ function addonTable:PrintHelp()
     print("|cff2674cc[L|cffff0000i|rDL Roulette]|r Verfügbare Befehle:")
     print("|cff2674cc/lidl test|r - Zeigt eine Test-Challenge an.")
     print("|cff2674cc/lidl test1|r - Zeigt eine Test-Meldung an.")
+    print("|cff2674cc/lidl challenge <ID>|r - Zeigt eine bestimmte Challenge zum Testen an.")
     print("|cff2674cc/lidl challenges|r - Listet alle verfügbaren Challenges auf.")
 end
 
@@ -196,8 +205,7 @@ SlashCmdList["LEVELROULETTE"] = function(message)
     end
 
     if message == "test1" then
-        local firstName, lastName = UnitName("player")
-        local fullName = firstName .. " " .. lastName
+        local fullName = GetPlayerFullName()
         local level = UnitLevel("player") or 1
         local challengeID
         if LidlRouletteDB.settings.isRouletteEnabled == true then
@@ -214,6 +222,24 @@ SlashCmdList["LEVELROULETTE"] = function(message)
         for id, challenge in ipairs(addonTable.Challenges) do
             print("|cff2674cc" .. tostring(id) .. ".|r " .. challenge.title)
         end
+        return
+    end
+
+    local challengeID = message:match("^challenge%s+(%d+)$")
+    if challengeID then
+        challengeID = tonumber(challengeID)
+        local challenge = addonTable.Roulette.GetChallenge(challengeID)
+        if not challenge then
+            print("|cffff0000[Lidl Roulette]|r Unbekannte Challenge-ID: " .. tostring(challengeID))
+            return
+        end
+
+        local fullName = GetPlayerFullName()
+        local level = UnitLevel("player") or 1
+        addonTable.ChallengeRouletteUi:ShowChallenge(fullName, level, challengeID, "test")
+        return
+    elseif message:match("^challenge") then
+        print("|cff2674cc[L|cffff0000i|rDL Roulette]|r Verwendung: /lidl challenge <ID>")
         return
     end
 

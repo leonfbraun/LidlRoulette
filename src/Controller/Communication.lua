@@ -15,15 +15,19 @@ function Communication:Initialize()
     return true
 end
 
-function Communication.SendMessage(command, playerName, level, challengeID, eventID, challengerName)
+function Communication.SendMessage(command, playerName, level, challengeID, eventID, challengerName, comboHighScore, challengeSong, targetScore, taxSilver)
     local message = string.format(
-        "%s|%s|%d|%s|%s|%s",
+        "%s|%s|%d|%s|%s|%s|%s|%s|%s|%s",
         command,
         playerName,
         level,
         challengeID and tostring(challengeID) or "-",
         eventID,
-        challengerName or "-"
+        challengerName or "-",
+        comboHighScore ~= nil and tostring(comboHighScore) or "-",
+        challengeSong or "-",
+        targetScore ~= nil and tostring(targetScore) or "-",
+        taxSilver ~= nil and tostring(taxSilver) or "-"
     )
 
     local partyMessageSuccess, partyMessageErrorMessage = C_ChatInfo.SendAddonMessage(
@@ -56,10 +60,10 @@ function Communication:OnMessageReceived(prefix, message, _, sender)
         return
     end
 
-    local command, playerName, level, challengeID, eventID, challengerName =
+    local command, playerName, level, challengeID, eventID, challengerName, comboHighScore, challengeSong, targetScore, taxSilver =
         strsplit("|", message)
 
-    if command ~= "LEVELUP" and command ~= "DEATH" and command ~= "DUEL" and command ~= "TIMERFINISHED" and command ~= "TIMERCANCELED" then
+    if command ~= "LEVELUP" and command ~= "DEATH" and command ~= "DUEL" and command ~= "TIMERFINISHED" and command ~= "TIMERCANCELED" and command ~= "GUITARHEROFINISHED" then
         return
     end
 
@@ -73,6 +77,26 @@ function Communication:OnMessageReceived(prefix, message, _, sender)
         end
     end
 
+    local playerComboHighScore
+    if comboHighScore and comboHighScore ~= "-" then
+        playerComboHighScore = tonumber(comboHighScore)
+        if not playerComboHighScore or playerComboHighScore < 0 or playerComboHighScore % 1 ~= 0 then
+            print("|cffff0000[Lidl Roulette]|r Ungültiger Combo-Highscore von " .. tostring(sender))
+            return
+        end
+    end
+
+    local playerTargetScore = targetScore and targetScore ~= "-" and tonumber(targetScore) or nil
+    local playerTaxSilver = taxSilver and taxSilver ~= "-" and tonumber(taxSilver) or nil
+    if targetScore and targetScore ~= "-" and (not playerTargetScore or playerTargetScore < 0 or playerTargetScore % 1 ~= 0) then
+        print("|cffff0000[Lidl Roulette]|r Ungültiger Zielscore von " .. tostring(sender))
+        return
+    end
+    if taxSilver and taxSilver ~= "-" and (not playerTaxSilver or playerTaxSilver < 0 or playerTaxSilver % 1 ~= 0) then
+        print("|cffff0000[Lidl Roulette]|r Ungültige Steuerangabe von " .. tostring(sender))
+        return
+    end
+
     if not playerName or not playerLevel or not eventID or eventID == "" then
         print("|cffff0000[Lidl Roulette]|r Ungültige Nachricht von " .. tostring(sender))
         return
@@ -84,6 +108,10 @@ function Communication:OnMessageReceived(prefix, message, _, sender)
         playerChallengeID,
         eventID,
         challengerName ~= "-" and challengerName or nil,
-        command
+        command,
+        playerComboHighScore,
+        challengeSong ~= "-" and challengeSong or nil,
+        playerTargetScore,
+        playerTaxSilver
     )
 end
