@@ -8,6 +8,7 @@ addonTable.OsuSongs = {
         bpm = 120,
         duration = 110,
         beatOffset = 0.134,
+        timingOffset = 0,
         stepsPerBeat = 2,
         difficulty = "hard",
         targetScore = 44400,

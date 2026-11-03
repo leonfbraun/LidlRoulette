@@ -8,6 +8,7 @@ local APPROACH_SECONDS = 1.15
 local HIT_WINDOW = 0.24
 local PERFECT_WINDOW = 0.06
 local GOOD_WINDOW = 0.14
+local MAX_TIMING_OFFSET = 0.2
 local TICK_SECONDS = 0.05
 local MUSIC_FADE_SECONDS = 0.8
 local PLAYFIELD_WIDTH = 940
@@ -176,12 +177,14 @@ local function CreateCircleButton()
         end
 
         local note = self.note
-        local timingError = math.abs((GetTime() - startedAt) - note.hitAt)
+        local signedTimingError = (GetTime() - startedAt) - note.hitAt
+        local timingError = math.abs(signedTimingError)
+        local timingDirection = signedTimingError < 0 and "FRÜH" or "SPÄT"
         if timingError > HIT_WINDOW then
             note.judged = true
             misses = misses + 1
             combo = 0
-            ShowCursorFeedback("ZEITFENSTER VERPASST", 1, 0.25, 0.25)
+            ShowCursorFeedback("VERPASST  " .. timingDirection, 1, 0.25, 0.25)
         else
             note.judged = true
             hits = hits + 1
@@ -192,9 +195,9 @@ local function CreateCircleButton()
             if points == 300 then
                 ShowCursorFeedback("PERFEKT  +300", 0.35, 1, 0.5)
             elseif points == 100 then
-                ShowCursorFeedback("GUT  +100", 1, 0.9, 0.25)
+                ShowCursorFeedback("GUT  +100  " .. timingDirection, 1, 0.9, 0.25)
             else
-                ShowCursorFeedback("KNAPP  +50", 1, 0.6, 0.2)
+                ShowCursorFeedback("KNAPP  +50  " .. timingDirection, 1, 0.6, 0.2)
             end
         end
 
@@ -546,6 +549,8 @@ function OsuUi:Start(challengeIDArg)
             and type(candidate.bpm) == "number" and candidate.bpm >= 30 and candidate.bpm <= 300
             and type(candidate.duration) == "number" and candidate.duration > 0 and candidate.duration <= 180
             and type(candidate.beatOffset) == "number" and candidate.beatOffset >= 0 and candidate.beatOffset < candidate.duration
+            and type(candidate.timingOffset) == "number"
+            and math.abs(candidate.timingOffset) <= MAX_TIMING_OFFSET
             and type(candidate.stepsPerBeat) == "number" and candidate.stepsPerBeat >= 1
             and candidate.stepsPerBeat <= 8 and candidate.stepsPerBeat == math.floor(candidate.stepsPerBeat)
             and type(candidate.targetScore) == "number" and candidate.targetScore > 0
@@ -582,12 +587,13 @@ function OsuUi:Start(challengeIDArg)
         local key = selected.chart:sub(index, index)
         local hitAt = song.beatOffset + (index - 1) * stepDuration
         if key ~= "-" and hitAt < song.duration then
+            local judgementAt = hitAt + song.timingOffset
             comboNumber = comboNumber + 1
             local x, y = GetNextNotePosition(
                 previousX,
                 previousY,
                 previousHitAt and hitAt - previousHitAt or 0,
-                hitAt,
+                judgementAt,
                 notes
             )
             if not x or not y then
@@ -595,7 +601,7 @@ function OsuUi:Start(challengeIDArg)
                 return
             end
             table.insert(notes, {
-                hitAt = hitAt,
+                hitAt = judgementAt,
                 x = x,
                 y = y,
                 comboNumber = (comboNumber - 1) % 9 + 1,
