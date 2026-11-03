@@ -8,6 +8,7 @@
 src/LidlRoulette.lua
 src/Model/Challenges.lua
 src/Model/GuitarHeroSongs.lua
+src/Model/OsuSongs.lua
 src/Utility/Roulette.lua
 src/Utility/Keybindings.lua
 src/Controller/Communication.lua
@@ -17,6 +18,7 @@ src/View/ChallengeRoulette.lua
 src/View/DevilMayCryCombo.lua
 src/View/BayonettaCombo.lua
 src/View/GuitarHeroSimple.lua
+src/View/Osu.lua
 src/View/FartSounds.lua
 src/View/Overview.lua
 src/View/Settings.lua

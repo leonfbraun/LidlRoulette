@@ -63,7 +63,7 @@ function Communication:OnMessageReceived(prefix, message, _, sender)
     local command, playerName, level, challengeID, eventID, challengerName, comboHighScore, challengeSong, targetScore, taxSilver =
         strsplit("|", message)
 
-    if command ~= "LEVELUP" and command ~= "DEATH" and command ~= "DUEL" and command ~= "TIMERFINISHED" and command ~= "TIMERCANCELED" and command ~= "GUITARHEROFINISHED" then
+    if command ~= "LEVELUP" and command ~= "DEATH" and command ~= "DUEL" and command ~= "TIMERFINISHED" and command ~= "TIMERCANCELED" and command ~= "GUITARHEROFINISHED" and command ~= "OSUFINISHED" then
         return
     end
 

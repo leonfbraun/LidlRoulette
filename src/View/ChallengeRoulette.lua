@@ -61,6 +61,8 @@ function ChallengeRouletteUi:Initialize()
         local challenge = addonTable.Roulette.GetChallenge(ChallengeRouletteUi.targetChallengeID)
         if challenge and challenge.guitarHero then
             addonTable.GuitarHeroUi:Start(ChallengeRouletteUi.targetChallengeID)
+        elseif challenge and challenge.osu then
+            addonTable.OsuUi:Start(ChallengeRouletteUi.targetChallengeID)
         elseif challenge and type(challenge.timeInSeconds) == "number" and challenge.timeInSeconds > 0 then
             addonTable.TimerUi.StartChallengeTimer(ChallengeRouletteUi.targetChallengeID)
         end

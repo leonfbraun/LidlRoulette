@@ -22,6 +22,7 @@ addonTable.Challenges = {
     { rarity= "Common", tags={ "Positiv" }, timeInSeconds=900, title="Lidl-DJ", description="Du bist jetzt für 15 Minuten DJ. Spiele mit dem Lidl Einkaufshits bot ein paar Banger ab"},
     { rarity= "Common", tags={ "Negativ", "Sport" }, title= "Get low", description="Mache 10 Bodyweight Squats, Full ROM"},
     { rarity= "Common", tags={ "Negativ", "Clanker" }, guitarHero=true, guitarHeroDifficulty="easy", title="WoW-Hero: Easy", description="Spiele einen zufälligen Song der Schwierigkeitsstufe Easy in WoW-Hero. Verfehlst du den Zielscore, zahle Steuern in Höhe deines Levels x2 in Silber an die Gilde."},
+    { rarity= "Uncommon", tags={ "Negativ", "Clanker" }, osu=true, title="Osu!", description="Spiele einen zufälligen Osu!-Song und klicke die Kreise im richtigen Timing. Verfehlst du den Zielscore, zahle Steuern in Höhe deines Levels x2 in Silber an die Gilde."},
     { rarity= "Uncommon", tags={ "Negativ", "Clanker" }, timeInSeconds=600, keybindingShuffle="wasd", title="Gehfehler", description="Für die nächsten 10 Minuten läufst du komisch..." },
     { rarity= "Uncommon", tags={ "Negativ", "Clanker" }, timeInSeconds=300, popupChallenge=true, title="Virus", description="Das hättest du lieber nicht herunterladen sollen" },
     { rarity= "Uncommon", tags={ "Negativ", "Clanker" }, timeInSeconds=300, fartSounds=true, title="Stinky-Abilities", description="Für die nächsten 5 Minuten stinkt es, wenn du eine Fähigkeit benutzt" },
