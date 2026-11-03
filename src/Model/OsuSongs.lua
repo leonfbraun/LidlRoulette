@@ -11,6 +11,6 @@ addonTable.OsuSongs = {
         timingOffset = 0,
         stepsPerBeat = 2,
         difficulty = "hard",
-        targetPercent = 0.7,
+        targetPercent = 0.5,
     },
 }
