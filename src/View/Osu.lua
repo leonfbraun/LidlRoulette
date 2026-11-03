@@ -19,6 +19,7 @@ local NOTE_EDGE_MARGIN = MAX_CIRCLE_SIZE / 2 + 8
 local MIN_NOTE_DISTANCE = MAX_CIRCLE_SIZE + 12
 local MAX_NOTE_DISTANCE = 210
 local TIMING_INSTRUCTION = "Klicke genau dann, wenn der schrumpfende Ring den weißen Zielkreis berührt."
+local HIT_SOUND_FILE = "Interface\\AddOns\\LidlRoulette\\src\\Media\\Sounds\\OSU\\OsuHitSound.ogg"
 
 local frame
 local playfield
@@ -27,6 +28,8 @@ local scoreText
 local statusText
 local timeText
 local feedbackText
+local cursorFeedbackFrame
+local cursorFeedbackText
 local closeButton
 local ticker
 local musicFadeTicker
@@ -52,6 +55,23 @@ local feedbackExpiresAt
 
 local function UpdateScore()
     scoreText:SetText(string.format("%07d / ZIEL %07d    COMBO %d    FEHLER %d", score, song and song.targetScore or 0, combo, misses))
+end
+
+local function ShowCursorFeedback(text, red, green, blue)
+    local cursorX, cursorY = GetCursorPosition()
+    local scale = UIParent:GetEffectiveScale()
+    cursorX = cursorX / scale
+    cursorY = cursorY / scale
+    cursorX = math.max(180, math.min(UIParent:GetWidth() - 180, cursorX))
+    cursorY = math.max(32, math.min(UIParent:GetHeight() - 32, cursorY + 28))
+
+    cursorFeedbackText:SetText(text)
+    cursorFeedbackText:SetTextColor(red, green, blue)
+    cursorFeedbackFrame:ClearAllPoints()
+    cursorFeedbackFrame:SetPoint("BOTTOM", UIParent, "BOTTOMLEFT", cursorX, cursorY)
+    cursorFeedbackFrame:SetAlpha(1)
+    cursorFeedbackFrame:Show()
+    feedbackExpiresAt = GetTime() + 0.65
 end
 
 local function FadeBackgroundMusic(targetVolume, onFinished)
@@ -97,7 +117,7 @@ end
 local function CreateCircleButton()
     local button = CreateFrame("Button", nil, playfield)
     button:SetSize(CIRCLE_SIZE, CIRCLE_SIZE)
-    button:RegisterForClicks("LeftButtonUp")
+    button:RegisterForClicks("LeftButtonDown")
 
     local fill = CreateMaskedTexture(button, "BACKGROUND")
     fill:SetAllPoints()
@@ -129,20 +149,14 @@ local function CreateCircleButton()
     approachInner:SetVertexColor(0.055, 0.12, 0.21, 1)
 
     local number = button:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    number:SetFont("Fonts\\FRIZQT__.TTF", 26, "OUTLINE")
-    number:SetPoint("CENTER", button, "CENTER", 0, 12)
-    number:SetTextColor(1, 1, 1)
-
-    local hitCue = button:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    hitCue:SetFont("Fonts\\FRIZQT__.TTF", 12, "OUTLINE")
-    hitCue:SetPoint("CENTER", button, "CENTER", 0, -22)
-    hitCue:SetTextColor(1, 1, 1)
+    number:SetFont("Fonts\\FRIZQT__.TTF", 19, "OUTLINE")
+    number:SetPoint("CENTER")
+    number:SetTextColor(1, 1, 1, 0.75)
 
     button.fill = fill
     button.approach = approach
     button.approachInner = approachInner
     button.number = number
-    button.hitCue = hitCue
     button:Hide()
     button:SetScript("OnClick", function(self)
         if not active or not musicStarted or not self.note then
@@ -157,9 +171,7 @@ local function CreateCircleButton()
         local dx = cursorX - centerX
         local dy = cursorY - centerY
         if dx * dx + dy * dy > (CIRCLE_SIZE * 0.5) ^ 2 then
-            feedbackText:SetText("KLICKE MITTIG AUF DEN KREIS")
-            feedbackText:SetTextColor(1, 0.8, 0.25)
-            feedbackExpiresAt = GetTime() + 0.7
+            ShowCursorFeedback("KLICKE MITTIG AUF DEN KREIS", 1, 0.8, 0.25)
             return
         end
 
@@ -169,24 +181,21 @@ local function CreateCircleButton()
             note.judged = true
             misses = misses + 1
             combo = 0
-            feedbackText:SetText("ZEITFENSTER VERPASST")
-            feedbackText:SetTextColor(1, 0.25, 0.25)
-            feedbackExpiresAt = GetTime() + 0.5
+            ShowCursorFeedback("ZEITFENSTER VERPASST", 1, 0.25, 0.25)
         else
             note.judged = true
             hits = hits + 1
             combo = combo + 1
+            PlaySoundFile(HIT_SOUND_FILE, "SFX")
             local points = timingError <= PERFECT_WINDOW and 300 or timingError <= GOOD_WINDOW and 100 or 50
             score = score + points
-            feedbackText:SetText(points == 300 and "PERFEKT  +300" or points == 100 and "GUT  +100" or "KNAPP  +50")
             if points == 300 then
-                feedbackText:SetTextColor(0.35, 1, 0.5)
+                ShowCursorFeedback("PERFEKT  +300", 0.35, 1, 0.5)
             elseif points == 100 then
-                feedbackText:SetTextColor(1, 0.9, 0.25)
+                ShowCursorFeedback("GUT  +100", 1, 0.9, 0.25)
             else
-                feedbackText:SetTextColor(1, 0.6, 0.2)
+                ShowCursorFeedback("KNAPP  +50", 1, 0.6, 0.2)
             end
-            feedbackExpiresAt = GetTime() + 0.5
         end
 
         self:Hide()
@@ -214,7 +223,6 @@ local function AcquireCircle(note)
 
     button.note = note
     button.number:SetText(note.comboNumber)
-    button.hitCue:SetText("")
     button:ClearAllPoints()
     button:SetPoint("CENTER", playfield, "BOTTOMLEFT", note.x, note.y)
     button:Show()
@@ -300,6 +308,8 @@ local function StopGame(showResult)
         FadeBackgroundMusic(originalVolume)
     end
     musicStarted = false
+    cursorFeedbackFrame:Hide()
+    feedbackExpiresAt = nil
 
     for _, note in ipairs(notes) do
         if note.button then
@@ -395,9 +405,7 @@ local function UpdateGame()
                 note.judged = true
                 misses = misses + 1
                 combo = 0
-                feedbackText:SetText("VERFEHLT")
-                feedbackText:SetTextColor(1, 0.25, 0.25)
-                feedbackExpiresAt = GetTime() + 0.5
+                ShowCursorFeedback("VERFEHLT", 1, 0.25, 0.25)
                 note.button:Hide()
                 note.button.note = nil
                 note.button = nil
@@ -410,26 +418,19 @@ local function UpdateGame()
                 local timingError = math.abs(timeUntilHit)
                 if timingError <= PERFECT_WINDOW then
                     note.button.approach:SetVertexColor(0.35, 1, 0.5, 0.9)
-                    note.button.hitCue:SetText("JETZT!")
-                    note.button.hitCue:SetTextColor(0.35, 1, 0.5)
                 elseif timingError <= GOOD_WINDOW then
                     note.button.approach:SetVertexColor(1, 0.9, 0.25, 0.9)
-                    note.button.hitCue:SetText("GUT")
-                    note.button.hitCue:SetTextColor(1, 0.9, 0.25)
                 elseif timingError <= HIT_WINDOW then
                     note.button.approach:SetVertexColor(1, 0.55, 0.18, 0.9)
-                    note.button.hitCue:SetText("KLICK!")
-                    note.button.hitCue:SetTextColor(1, 0.65, 0.25)
                 else
                     note.button.approach:SetVertexColor(0.25, 0.85, 1, 0.8)
-                    note.button.hitCue:SetText("")
                 end
             end
         end
     end
 
     if feedbackExpiresAt and GetTime() >= feedbackExpiresAt then
-        feedbackText:SetText("")
+        cursorFeedbackFrame:Hide()
         feedbackExpiresAt = nil
     end
 
@@ -501,6 +502,16 @@ local function Initialize()
     feedbackText = playfield:CreateFontString(nil, "OVERLAY", "GameFontNormalHuge")
     feedbackText:SetPoint("CENTER")
     feedbackText:SetFont("Fonts\\FRIZQT__.TTF", 30, "OUTLINE")
+
+    cursorFeedbackFrame = CreateFrame("Frame", nil, UIParent)
+    cursorFeedbackFrame:SetSize(360, 42)
+    cursorFeedbackFrame:SetFrameStrata("TOOLTIP")
+    cursorFeedbackFrame:EnableMouse(false)
+    cursorFeedbackText = cursorFeedbackFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    cursorFeedbackText:SetAllPoints()
+    cursorFeedbackText:SetFont("Fonts\\FRIZQT__.TTF", 18, "OUTLINE")
+    cursorFeedbackText:SetJustifyH("CENTER")
+    cursorFeedbackFrame:Hide()
 
     closeButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
     closeButton:SetSize(110, 24)
@@ -607,6 +618,7 @@ function OsuUi:Start(challengeIDArg)
     active = true
     sessionID = sessionID + 1
     feedbackExpiresAt = nil
+    cursorFeedbackFrame:Hide()
 
     local difficultyNames = { easy = "LEICHT", medium = "MITTEL", hard = "SCHWER" }
     songText:SetText(song.title .. "  |  " .. (difficultyNames[song.difficulty] or string.upper(song.difficulty)))
