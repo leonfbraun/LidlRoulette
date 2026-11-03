@@ -15,6 +15,7 @@ function AnnouncementUi:Initialize()
     announcementFrame = CreateFrame("Frame", nil, UIParent)
     announcementFrame:SetSize(900, 150)
     announcementFrame:SetPoint("CENTER", UIParent, "CENTER", 0, 350)
+    announcementFrame:SetFrameStrata("TOOLTIP")
 
     playerAnnouncementText = announcementFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     playerAnnouncementText:SetFont("Fonts\\FRIZQT__.TTF", 26, "OUTLINE")

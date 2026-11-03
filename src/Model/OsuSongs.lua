@@ -7,10 +7,10 @@ addonTable.OsuSongs = {
         chartSourceTitle = "Sea Shanty 2 (Trap Remix)",
         bpm = 120,
         duration = 110,
-        beatOffset = 0.134,
+        beatOffset = 0,
         timingOffset = 0,
         stepsPerBeat = 2,
         difficulty = "hard",
-        targetScore = 44400,
+        targetPercent = 0.7,
     },
 }
