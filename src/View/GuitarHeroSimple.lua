@@ -187,7 +187,7 @@ local function StopGame(showResult)
         UpdateScore()
         print("|cff2674cc[L|cffff0000i|rDL Roulette]|r Guitar Hero: " .. song.title ..
             " beendet. Score: " .. score .. " | Treffer: " .. hits .. " | Verfehlt: " .. misses)
-        local taxSilver = score < song.targetScore and (UnitLevel("player") or 1) * 2 or 0
+        local taxSilver = score < song.targetScore and addonTable:GetTaxSilver() or 0
         addonTable:OnLocalTimerEvent(
             challengeID,
             "GUITARHEROFINISHED",

@@ -844,7 +844,7 @@ local function StopGame(showResult)
             end
         end
 
-        local taxSilver = score < targetScore and (UnitLevel("player") or 1) * 2 or 0
+        local taxSilver = score < targetScore and addonTable:GetTaxSilver() or 0
         addonTable:OnLocalTimerEvent(
             challengeID,
             "OSUFINISHED",

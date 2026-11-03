@@ -81,7 +81,7 @@ function AnnouncementUi:ShowAnnouncement(playerName, challengerName, level, chal
             announcementMessage = announcementMessage .. "\nZielscore erreicht. Keine Steuern!"
         elseif targetScore then
             announcementMessage = announcementMessage .. "\nZielscore verfehlt. Steuern: |cffffb52e" ..
-                tostring(taxSilver or (level * 2)) .. " Silber|r an die Gilde zahlen (Level x2)."
+                tostring(taxSilver or addonTable:GetTaxSilver(level)) .. " Silber|r an die Gilde zahlen."
         end
     end
     
