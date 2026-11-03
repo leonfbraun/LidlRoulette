@@ -10,14 +10,15 @@ local PERFECT_WINDOW = 0.06
 local GOOD_WINDOW = 0.14
 local TICK_SECONDS = 0.05
 local MUSIC_FADE_SECONDS = 0.8
-local PLAYFIELD_WIDTH = 660
-local PLAYFIELD_HEIGHT = 400
-local CIRCLE_SIZE = 70
-local MAX_CIRCLE_SIZE = 110
+local PLAYFIELD_WIDTH = 940
+local PLAYFIELD_HEIGHT = 620
+local CIRCLE_SIZE = 100
+local MAX_CIRCLE_SIZE = 168
 local TARGET_RING_SIZE = CIRCLE_SIZE + 10
 local NOTE_EDGE_MARGIN = MAX_CIRCLE_SIZE / 2 + 8
 local MIN_NOTE_DISTANCE = MAX_CIRCLE_SIZE + 12
-local MAX_NOTE_DISTANCE = 150
+local MAX_NOTE_DISTANCE = 210
+local TIMING_INSTRUCTION = "Klicke genau dann, wenn der schrumpfende Ring den weißen Zielkreis berührt."
 
 local frame
 local playfield
@@ -123,19 +124,25 @@ local function CreateCircleButton()
     approach:SetVertexColor(0.25, 0.85, 1, 0.8)
 
     local approachInner = CreateMaskedTexture(button, "ARTWORK", 2)
-    approachInner:SetSize(MAX_CIRCLE_SIZE - 8, MAX_CIRCLE_SIZE - 8)
+    approachInner:SetSize(MAX_CIRCLE_SIZE - 20, MAX_CIRCLE_SIZE - 20)
     approachInner:SetPoint("CENTER", approach)
     approachInner:SetVertexColor(0.055, 0.12, 0.21, 1)
 
     local number = button:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    number:SetFont("Fonts\\FRIZQT__.TTF", 22, "OUTLINE")
-    number:SetPoint("CENTER")
+    number:SetFont("Fonts\\FRIZQT__.TTF", 26, "OUTLINE")
+    number:SetPoint("CENTER", button, "CENTER", 0, 12)
     number:SetTextColor(1, 1, 1)
+
+    local hitCue = button:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    hitCue:SetFont("Fonts\\FRIZQT__.TTF", 12, "OUTLINE")
+    hitCue:SetPoint("CENTER", button, "CENTER", 0, -22)
+    hitCue:SetTextColor(1, 1, 1)
 
     button.fill = fill
     button.approach = approach
     button.approachInner = approachInner
     button.number = number
+    button.hitCue = hitCue
     button:Hide()
     button:SetScript("OnClick", function(self)
         if not active or not musicStarted or not self.note then
@@ -149,7 +156,7 @@ local function CreateCircleButton()
         local centerX, centerY = self:GetCenter()
         local dx = cursorX - centerX
         local dy = cursorY - centerY
-        if dx * dx + dy * dy > (CIRCLE_SIZE * 0.48) ^ 2 then
+        if dx * dx + dy * dy > (CIRCLE_SIZE * 0.5) ^ 2 then
             feedbackText:SetText("KLICKE MITTIG AUF DEN KREIS")
             feedbackText:SetTextColor(1, 0.8, 0.25)
             feedbackExpiresAt = GetTime() + 0.7
@@ -207,6 +214,7 @@ local function AcquireCircle(note)
 
     button.note = note
     button.number:SetText(note.comboNumber)
+    button.hitCue:SetText("")
     button:ClearAllPoints()
     button:SetPoint("CENTER", playfield, "BOTTOMLEFT", note.x, note.y)
     button:Show()
@@ -398,16 +406,23 @@ local function UpdateGame()
                 local progress = math.max(0, math.min(1, 1 - timeUntilHit / APPROACH_SECONDS))
                 local approachSize = MAX_CIRCLE_SIZE - (MAX_CIRCLE_SIZE - CIRCLE_SIZE) * progress
                 note.button.approach:SetSize(approachSize, approachSize)
-                note.button.approachInner:SetSize(approachSize - 8, approachSize - 8)
+                note.button.approachInner:SetSize(approachSize - 20, approachSize - 20)
                 local timingError = math.abs(timeUntilHit)
                 if timingError <= PERFECT_WINDOW then
                     note.button.approach:SetVertexColor(0.35, 1, 0.5, 0.9)
+                    note.button.hitCue:SetText("JETZT!")
+                    note.button.hitCue:SetTextColor(0.35, 1, 0.5)
                 elseif timingError <= GOOD_WINDOW then
                     note.button.approach:SetVertexColor(1, 0.9, 0.25, 0.9)
+                    note.button.hitCue:SetText("GUT")
+                    note.button.hitCue:SetTextColor(1, 0.9, 0.25)
                 elseif timingError <= HIT_WINDOW then
                     note.button.approach:SetVertexColor(1, 0.55, 0.18, 0.9)
+                    note.button.hitCue:SetText("KLICK!")
+                    note.button.hitCue:SetTextColor(1, 0.65, 0.25)
                 else
                     note.button.approach:SetVertexColor(0.25, 0.85, 1, 0.8)
+                    note.button.hitCue:SetText("")
                 end
             end
         end
@@ -432,10 +447,16 @@ local function Initialize()
     end
 
     frame = CreateFrame("Frame", "LidlRouletteOsuFrame", UIParent, "BackdropTemplate")
-    frame:SetSize(780, 560)
+    frame:SetSize(1080, 860)
     frame:SetPoint("CENTER")
     frame:SetFrameStrata("DIALOG")
     frame:SetClampedToScreen(true)
+    local scale = math.min(
+        1,
+        (UIParent:GetWidth() - 60) / 1080,
+        (UIParent:GetHeight() - 60) / 860
+    )
+    frame:SetScale(math.max(0.5, scale))
     frame:EnableMouse(true)
     frame:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 2 })
     frame:SetBackdropColor(0.025, 0.035, 0.065, 0.98)
@@ -443,27 +464,35 @@ local function Initialize()
 
     songText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     songText:SetPoint("TOP", frame, "TOP", 0, -14)
-    songText:SetWidth(700)
+    songText:SetWidth(1000)
     songText:SetJustifyH("CENTER")
     songText:SetFont("Fonts\\FRIZQT__.TTF", 22, "OUTLINE")
 
     scoreText = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightLarge")
-    scoreText:SetPoint("TOPLEFT", frame, "TOPLEFT", 24, -45)
-    scoreText:SetFont("Fonts\\FRIZQT__.TTF", 15, "OUTLINE")
+    scoreText:SetPoint("TOPLEFT", frame, "TOPLEFT", 30, -48)
+    scoreText:SetFont("Fonts\\FRIZQT__.TTF", 17, "OUTLINE")
 
     timeText = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-    timeText:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -24, -48)
-    timeText:SetFont("Fonts\\FRIZQT__.TTF", 14, "OUTLINE")
+    timeText:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -30, -50)
+    timeText:SetFont("Fonts\\FRIZQT__.TTF", 16, "OUTLINE")
 
     statusText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    statusText:SetPoint("TOP", frame, "TOP", 0, -67)
-    statusText:SetWidth(740)
+    statusText:SetPoint("TOP", frame, "TOP", 0, -73)
+    statusText:SetWidth(1000)
     statusText:SetJustifyH("CENTER")
-    statusText:SetFont("Fonts\\FRIZQT__.TTF", 12, "OUTLINE")
+    statusText:SetFont("Fonts\\FRIZQT__.TTF", 14, "OUTLINE")
+    statusText:SetText(TIMING_INSTRUCTION)
+
+    local timingLegend = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    timingLegend:SetPoint("TOP", statusText, "BOTTOM", 0, -4)
+    timingLegend:SetWidth(1000)
+    timingLegend:SetJustifyH("CENTER")
+    timingLegend:SetFont("Fonts\\FRIZQT__.TTF", 12, "OUTLINE")
+    timingLegend:SetText("|cff59ff7aPERFEKT  ±0,06 s|r     |cffffdf4aGUT  ±0,14 s|r     |cffff9a42KNAPP  ±0,24 s|r     |cffffffffDaneben = Fehlschlag|r")
 
     playfield = CreateFrame("Frame", nil, frame, "BackdropTemplate")
     playfield:SetSize(PLAYFIELD_WIDTH, PLAYFIELD_HEIGHT)
-    playfield:SetPoint("CENTER", frame, "CENTER", 0, -18)
+    playfield:SetPoint("CENTER", frame, "CENTER", 0, -20)
     playfield:SetFrameLevel(frame:GetFrameLevel() + 1)
     playfield:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 2 })
     playfield:SetBackdropColor(0.035, 0.075, 0.13, 1)
@@ -582,7 +611,7 @@ function OsuUi:Start(challengeIDArg)
     local difficultyNames = { easy = "LEICHT", medium = "MITTEL", hard = "SCHWER" }
     songText:SetText(song.title .. "  |  " .. (difficultyNames[song.difficulty] or string.upper(song.difficulty)))
     timeText:SetText("0:00")
-    statusText:SetText("")
+    statusText:SetText(TIMING_INSTRUCTION)
     feedbackText:SetText(tostring(COUNTDOWN_SECONDS))
     feedbackText:SetTextColor(1, 1, 1)
     closeButton:SetText("Abbrechen")
