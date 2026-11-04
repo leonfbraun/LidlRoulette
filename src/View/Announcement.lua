@@ -87,10 +87,10 @@ function AnnouncementUi:ShowAnnouncement(playerName, challengerName, level, chal
         compactDescription = "Score: " .. tostring(comboHighScore or "-") ..
             (targetScore and (" / " .. tostring(targetScore)) or "") .. " Punkte"
         if targetScore and comboHighScore ~= nil and comboHighScore >= targetScore then
-            compactDescription = compactDescription .. " - Ziel erreicht, keine Steuern"
+            compactDescription = compactDescription .. " - |cff73ff8cZiel erreicht!|r"
         elseif targetScore and comboHighScore ~= nil then
-            compactDescription = compactDescription .. " - Ziel verfehlt, Steuern: " ..
-                tostring(taxSilver or addonTable:GetTaxSilver(level)) .. " Silber"
+            compactDescription = compactDescription .. " - |cffff4747Ziel verfehlt, Steuern: " ..
+                tostring(taxSilver or addonTable:GetTaxSilver(level)) .. " Silber|r"
         end
     elseif comboHighScore ~= nil and (command == "TIMERFINISHED" or command == "TIMERCANCELED") then
         local scoreUnit = challenge and challenge.bayonettaCombo and " Combo Points" or " Treffer"
