@@ -22,6 +22,11 @@ local BORDER = 4
 local EDGE_MARGIN = CIRCLE_SIZE / 2 + 10
 local SPACING = CIRCLE_SIZE + 24
 local MAX_NOTE_DISTANCE = 230
+local FLOW_ANGLE = 0.9          -- max. Richtungsänderung bei schnellen Folgen (Bogenmaß)
+local MAX_CHART_STEPS = 8192
+local MAX_SONG_SECONDS = 600
+local Z_RANGE = 200             -- frühere Objekte liegen über späteren
+local LAYER_STEP = 300
 
 -- Approach-Ring: startet bei CIRCLE_SIZE * (1 + RING_GROWTH) und ist genau zum
 -- Treffzeitpunkt so groß wie der Kreis selbst.
@@ -35,6 +40,7 @@ local DIFFICULTY = {
     easy   = { w300 = 0.065, w100 = 0.125, w50 = 0.185, sliderChance = 0.5 },
     medium = { w300 = 0.055, w100 = 0.110, w50 = 0.165, sliderChance = 0.4 },
     hard   = { w300 = 0.045, w100 = 0.090, w50 = 0.140, sliderChance = 0.3 },
+    legendary = { w300 = 0.040, w100 = 0.085, w50 = 0.130, sliderChance = 0.3 },
 }
 local EARLY_MISS_SECONDS = 0.08 -- Klick knapp vor dem Fenster zählt als Fehler (gegen Spammen)
 
@@ -45,6 +51,8 @@ local MAX_SLIDER_SECONDS = 1.6
 local MIN_SLIDER_LENGTH = 120
 local MAX_SLIDER_LENGTH = 420
 local FOLLOW_RADIUS = CIRCLE_SIZE * 0.95
+local SLIDER_SEGMENTS = 8       -- Anzahl Linienstücke pro Slider (Kurven werden daraus gebildet)
+local SLIDER_CURVE_CHANCE = 0.6 -- Anteil gebogener Slider
 local TRACK_GRACE_SECONDS = 0.06
 
 -- Spinner
@@ -214,21 +222,39 @@ local function CreateView()
     view.ringInner:SetPoint("CENTER")
     view.ringInner:SetVertexColor(BG_COLOR[1], BG_COLOR[2], BG_COLOR[3], 1)
 
-    -- Slider-Körper: zwei dicke Linien (Rand + Füllung) und eine runde Endkappe.
+    -- Slider-Körper: Pfad aus SLIDER_SEGMENTS Linienstücken (Rand + Füllung) mit runden Gelenken.
     view.body = CreateFrame("Frame", nil, bodyLayer)
     view.body:SetAllPoints(playfield)
-    view.outline = view.body:CreateLine(nil, "BACKGROUND", nil, 0)
-    view.outline:SetThickness(CIRCLE_SIZE)
-    view.outline:SetColorTexture(1, 1, 1, 1)
-    view.capBorder = CreateMaskedTexture(view.body, "BACKGROUND", 0)
-    view.capBorder:SetSize(CIRCLE_SIZE, CIRCLE_SIZE)
-    view.capBorder:SetVertexColor(1, 1, 1, 1)
-    view.fillLine = view.body:CreateLine(nil, "BACKGROUND", nil, 1)
-    view.fillLine:SetThickness(CIRCLE_SIZE - BORDER * 2)
-    view.fillLine:SetColorTexture(INNER_COLOR[1], INNER_COLOR[2], INNER_COLOR[3], 1)
-    view.capInner = CreateMaskedTexture(view.body, "BACKGROUND", 1)
-    view.capInner:SetSize(CIRCLE_SIZE - BORDER * 2, CIRCLE_SIZE - BORDER * 2)
-    view.capInner:SetVertexColor(INNER_COLOR[1], INNER_COLOR[2], INNER_COLOR[3], 1)
+    view.outlines = {}
+    view.fills = {}
+    view.capBorders = {}
+    view.capInners = {}
+    for index = 1, SLIDER_SEGMENTS do
+        local outline = view.body:CreateLine(nil, "BACKGROUND", nil, 0)
+        outline:SetThickness(CIRCLE_SIZE)
+        outline:SetColorTexture(1, 1, 1, 1)
+        view.outlines[index] = outline
+
+        local fill = view.body:CreateLine(nil, "BACKGROUND", nil, 1)
+        fill:SetThickness(CIRCLE_SIZE - BORDER * 2)
+        fill:SetColorTexture(INNER_COLOR[1], INNER_COLOR[2], INNER_COLOR[3], 1)
+        view.fills[index] = fill
+    end
+    for index = 1, SLIDER_SEGMENTS + 1 do
+        local capBorder = CreateMaskedTexture(view.body, "BACKGROUND", 0)
+        capBorder:SetSize(CIRCLE_SIZE, CIRCLE_SIZE)
+        capBorder:SetVertexColor(1, 1, 1, 1)
+        view.capBorders[index] = capBorder
+
+        local capInner = CreateMaskedTexture(view.body, "BACKGROUND", 1)
+        capInner:SetSize(CIRCLE_SIZE - BORDER * 2, CIRCLE_SIZE - BORDER * 2)
+        capInner:SetVertexColor(INNER_COLOR[1], INNER_COLOR[2], INNER_COLOR[3], 1)
+        view.capInners[index] = capInner
+    end
+    -- Pfeil am Slider-Ende bei Reverse-Slidern
+    view.repeatMark = view.body:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    view.repeatMark:SetFont("Fonts\\FRIZQT__.TTF", 34, "OUTLINE")
+    view.repeatMark:SetTextColor(1, 1, 1, 0.95)
 
     -- Kreis (bzw. Slider-Kopf)
     view.head = CreateFrame("Frame", nil, headLayer)
@@ -248,7 +274,6 @@ local function CreateView()
     -- Slider-Ball mit Follow-Kreis
     view.ball = CreateFrame("Frame", nil, headLayer)
     view.ball:SetSize(CIRCLE_SIZE, CIRCLE_SIZE)
-    view.ball:SetFrameLevel(headLayer:GetFrameLevel() + 5)
     view.follow = CreateMaskedTexture(view.ball, "ARTWORK", 0)
     view.follow:SetSize(FOLLOW_RADIUS * 2, FOLLOW_RADIUS * 2)
     view.follow:SetPoint("CENTER")
@@ -291,6 +316,13 @@ local function AcquireView(obj)
     view.bucket = nil
     obj.view = view
 
+    -- Frühere Objekte liegen über späteren (wie in osu!), Ball immer ganz oben.
+    local z = Z_RANGE - (obj.index % Z_RANGE)
+    view.approach:SetFrameLevel(approachLayer:GetFrameLevel() + z)
+    view.body:SetFrameLevel(bodyLayer:GetFrameLevel() + z)
+    view.head:SetFrameLevel(headLayer:GetFrameLevel() + z)
+    view.ball:SetFrameLevel(headLayer:GetFrameLevel() + Z_RANGE + 5)
+
     view.approach:ClearAllPoints()
     view.approach:SetPoint("CENTER", playfield, "BOTTOMLEFT", obj.x, obj.y)
     view.approach:SetAlpha(0)
@@ -303,14 +335,42 @@ local function AcquireView(obj)
     view.number:SetText(obj.number)
 
     if obj.kind == "slider" then
-        view.outline:SetStartPoint("BOTTOMLEFT", view.body, obj.x, obj.y)
-        view.outline:SetEndPoint("BOTTOMLEFT", view.body, obj.x2, obj.y2)
-        view.fillLine:SetStartPoint("BOTTOMLEFT", view.body, obj.x, obj.y)
-        view.fillLine:SetEndPoint("BOTTOMLEFT", view.body, obj.x2, obj.y2)
-        view.capBorder:ClearAllPoints()
-        view.capBorder:SetPoint("CENTER", view.body, "BOTTOMLEFT", obj.x2, obj.y2)
-        view.capInner:ClearAllPoints()
-        view.capInner:SetPoint("CENTER", view.body, "BOTTOMLEFT", obj.x2, obj.y2)
+        local path = obj.path
+        for index = 1, SLIDER_SEGMENTS do
+            local from = path[index]
+            local to = path[index + 1]
+            view.outlines[index]:SetStartPoint("BOTTOMLEFT", view.body, from[1], from[2])
+            view.outlines[index]:SetEndPoint("BOTTOMLEFT", view.body, to[1], to[2])
+            view.fills[index]:SetStartPoint("BOTTOMLEFT", view.body, from[1], from[2])
+            view.fills[index]:SetEndPoint("BOTTOMLEFT", view.body, to[1], to[2])
+        end
+        for index = 1, SLIDER_SEGMENTS + 1 do
+            local point = path[index]
+            view.capBorders[index]:ClearAllPoints()
+            view.capBorders[index]:SetPoint("CENTER", view.body, "BOTTOMLEFT", point[1], point[2])
+            view.capInners[index]:ClearAllPoints()
+            view.capInners[index]:SetPoint("CENTER", view.body, "BOTTOMLEFT", point[1], point[2])
+        end
+
+        if obj.slides > 1 then
+            -- Pfeil zeigt vom Ende zurück Richtung Start.
+            local last = path[#path]
+            local before = path[#path - 1]
+            local dx = before[1] - last[1]
+            local dy = before[2] - last[2]
+            local arrow
+            if math.abs(dx) >= math.abs(dy) then
+                arrow = dx < 0 and "<" or ">"
+            else
+                arrow = dy > 0 and "^" or "v"
+            end
+            view.repeatMark:SetText(arrow)
+            view.repeatMark:ClearAllPoints()
+            view.repeatMark:SetPoint("CENTER", view.body, "BOTTOMLEFT", last[1], last[2])
+            view.repeatMark:Show()
+        else
+            view.repeatMark:Hide()
+        end
         view.body:SetAlpha(0)
         view.body:Show()
     else
@@ -361,7 +421,22 @@ local function InBounds(x, y)
 end
 
 -- Prüft nur gegen Objekte, die zum selben Zeitpunkt wie das neue sichtbar sind.
-local function IsPositionClear(x, y, spawnAt, list)
+-- Wie weit müssen sich zwei Objekte voneinander entfernt befinden? Bei schnellen Folgen
+-- (Streams) dürfen Kreise dicht beieinander liegen, bei größeren Abständen nicht.
+local function RequiredDistance(gapTime)
+    if gapTime < 0.12 then
+        return 52
+    elseif gapTime < 0.22 then
+        return 62
+    elseif gapTime < 0.4 then
+        return 92
+    end
+    return SPACING
+end
+
+-- Prüft nur gegen Objekte, die zum selben Zeitpunkt wie das neue sichtbar sind.
+local function IsPositionClear(x, y, spawnAt, hitAt, list, scale)
+    scale = scale or 1
     for index = #list, 1, -1 do
         local other = list[index]
         if other.endTime + 0.2 < spawnAt then
@@ -375,10 +450,17 @@ local function IsPositionClear(x, y, spawnAt, list)
                 return false
             end
         else
-            for _, point in ipairs(other.points) do
+            local gapTime = hitAt - other.endTime
+            local count = #other.points
+            for pointIndex, point in ipairs(other.points) do
+                local required = SPACING
+                if other.kind == "circle" or pointIndex == count then
+                    required = RequiredDistance(gapTime)
+                end
+                required = required * scale
                 local dx = x - point[1]
                 local dy = y - point[2]
-                if dx * dx + dy * dy < SPACING * SPACING then
+                if dx * dx + dy * dy < required * required then
                     return false
                 end
             end
@@ -388,40 +470,68 @@ local function IsPositionClear(x, y, spawnAt, list)
     return true
 end
 
-local function GetNextPosition(previousX, previousY, timeSincePrevious, spawnAt, list, rng)
+local function GetDistanceRange(timeSincePrevious)
+    if timeSincePrevious < 0.12 then
+        return 54, 64
+    elseif timeSincePrevious < 0.22 then
+        return 66, 96
+    elseif timeSincePrevious < 0.4 then
+        return 96, 150
+    end
+    return SPACING, math.min(MAX_NOTE_DISTANCE, SPACING + 8 + math.max(0, timeSincePrevious - 0.25) * 70)
+end
+
+-- Gibt x, y und die Bewegungsrichtung zum letzten Objekt zurück. Bei schnellen Folgen
+-- bleibt die Richtung ungefähr erhalten (Flow), nach Pausen springt das Muster.
+local function GetNextPosition(previousX, previousY, previousAngle, timeSincePrevious, spawnAt, hitAt, list, rng)
     if not previousX then
-        return PLAYFIELD_WIDTH / 2, PLAYFIELD_HEIGHT / 2
+        return PLAYFIELD_WIDTH / 2, PLAYFIELD_HEIGHT / 2, nil
     end
 
-    local maxDistance = math.min(MAX_NOTE_DISTANCE, SPACING + 8 + math.max(0, timeSincePrevious - 0.25) * 70)
-    local minDistance = math.min(SPACING, maxDistance)
+    local minDistance, maxDistance = GetDistanceRange(timeSincePrevious)
+    local flowing = timeSincePrevious < 0.4 and previousAngle ~= nil
 
-    for _ = 1, 64 do
-        local angle = rng() * PI * 2
+    for attempt = 1, 64 do
+        local angle
+        if flowing and attempt <= 40 then
+            angle = previousAngle + (rng() - 0.5) * 2 * FLOW_ANGLE
+        else
+            angle = rng() * PI * 2
+        end
         local distance = minDistance + rng() * (maxDistance - minDistance)
         local x = previousX + math.cos(angle) * distance
         local y = previousY + math.sin(angle) * distance
-        if InBounds(x, y) and IsPositionClear(x, y, spawnAt, list) then
-            return x, y
+        if InBounds(x, y) and IsPositionClear(x, y, spawnAt, hitAt, list) then
+            return x, y, angle
         end
     end
 
-    -- Fallback: freiester Punkt im Spielfeld, am weitesten vom letzten Objekt entfernt.
+    -- Fallback: freier Punkt, dessen Abstand am besten zum Wunschabstand passt. Ist das Feld
+    -- zu voll, wird der geforderte Mindestabstand schrittweise etwas verkleinert.
     local bestX
     local bestY
-    local bestDistance = -1
-    for x = EDGE_MARGIN, PLAYFIELD_WIDTH - EDGE_MARGIN, 12 do
-        for y = EDGE_MARGIN, PLAYFIELD_HEIGHT - EDGE_MARGIN, 12 do
-            if IsPositionClear(x, y, spawnAt, list) then
+    local bestScore = math.huge
+    for _, scale in ipairs({ 1, 0.8, 0.6 }) do
+        local stageX
+        local stageY
+        local stageScore = math.huge
+        for x = EDGE_MARGIN, PLAYFIELD_WIDTH - EDGE_MARGIN, 12 do
+            for y = EDGE_MARGIN, PLAYFIELD_HEIGHT - EDGE_MARGIN, 12 do
                 local dx = x - previousX
                 local dy = y - previousY
-                local distance = dx * dx + dy * dy
-                if distance > bestDistance then
-                    bestX = x
-                    bestY = y
-                    bestDistance = distance
+                local score = math.abs(math.sqrt(dx * dx + dy * dy) - maxDistance)
+                if score < stageScore and IsPositionClear(x, y, spawnAt, hitAt, list, scale) then
+                    stageX = x
+                    stageY = y
+                    stageScore = score
                 end
             end
+        end
+        if stageX and (not bestX or stageScore < bestScore) then
+            bestX, bestY, bestScore = stageX, stageY, stageScore
+        end
+        if bestScore <= 40 then
+            break
         end
     end
 
@@ -429,22 +539,111 @@ local function GetNextPosition(previousX, previousY, timeSincePrevious, spawnAt,
         bestX = EDGE_MARGIN + rng() * (PLAYFIELD_WIDTH - EDGE_MARGIN * 2)
         bestY = EDGE_MARGIN + rng() * (PLAYFIELD_HEIGHT - EDGE_MARGIN * 2)
     end
-    return bestX, bestY
+    return bestX, bestY, atan2(bestY - previousY, bestX - previousX)
 end
 
--- Gibt Liste der Objekte und die maximal erreichbare Punktzahl zurück.
--- Ablauf: Jede Note des Guitar-Hero-Charts wird zum Kreis. Ist danach eine
--- ausreichend große Lücke, wird daraus (mit Wahrscheinlichkeit sliderChance) ein
--- Slider, bei sehr großer Lücke ein Spinner. Der Zufall ist pro Song fest geseedet,
--- jeder Durchlauf sieht also gleich aus.
-local function BuildObjects(songData, chart, diff)
-    local list = {}
+-- Erzeugt den Pfad eines Sliders (gerade oder als Bogen) aus SLIDER_SEGMENTS Stücken.
+local function BuildSliderPath(x, y, spanSeconds, spawnAt, hitAt, list, rng)
+    local length = Clamp(spanSeconds * SLIDER_SPEED, MIN_SLIDER_LENGTH, MAX_SLIDER_LENGTH)
+    local curved = rng() < SLIDER_CURVE_CHANCE
+
+    for _ = 1, 40 do
+        local angle = rng() * PI * 2
+        local chord = curved and length * 0.85 or length
+        local x2 = x + math.cos(angle) * chord
+        local y2 = y + math.sin(angle) * chord
+        local controlX = (x + x2) / 2
+        local controlY = (y + y2) / 2
+        if curved then
+            local side = rng() < 0.5 and -1 or 1
+            controlX = controlX - math.sin(angle) * side * chord * 0.45
+            controlY = controlY + math.cos(angle) * side * chord * 0.45
+        end
+
+        local path = { { x, y } }
+        local valid = true
+        for step = 1, SLIDER_SEGMENTS do
+            local u = step / SLIDER_SEGMENTS
+            local inverse = 1 - u
+            local px = inverse * inverse * x + 2 * inverse * u * controlX + u * u * x2
+            local py = inverse * inverse * y + 2 * inverse * u * controlY + u * u * y2
+            if not InBounds(px, py) or not IsPositionClear(px, py, spawnAt, hitAt, list) then
+                valid = false
+                break
+            end
+            path[#path + 1] = { px, py }
+        end
+
+        if valid then
+            return path
+        end
+    end
+
+    return nil
+end
+
+local function GetPathPoint(obj, fraction)
+    local path = obj.path
+    local lengths = obj.pathLengths
+    local target = fraction * obj.pathTotal
+    for index = 2, #path do
+        if target <= lengths[index] then
+            local segment = lengths[index] - lengths[index - 1]
+            local t = segment > 0 and (target - lengths[index - 1]) / segment or 0
+            local from = path[index - 1]
+            local to = path[index]
+            return from[1] + (to[1] - from[1]) * t, from[2] + (to[2] - from[2]) * t
+        end
+    end
+
+    local last = path[#path]
+    return last[1], last[2]
+end
+
+-- Wandelt ein Chart in eine Liste von Einträgen { kind, hitAt, seconds, slides } um.
+--  * osuChart (eigenes Chart): o = Kreis, s = Slider, r = Reverse-Slider, p = Spinner,
+--    "~" verlängert den davorstehenden Slider/Spinner um einen Schritt, "-" = Pause.
+--  * sonst wird das Guitar-Hero-Chart automatisch umgewandelt: Jede Note wird zum Kreis,
+--    nach ausreichender Lücke (mit Wahrscheinlichkeit sliderChance) zum Slider, bei sehr
+--    großer Lücke zum Spinner.
+local function CollectEntries(songData, chart, diff, rng)
+    local entries = {}
     local stepDuration = 60 / songData.bpm / songData.stepsPerBeat
-    local rng = MakeRng(songData.title)
-    local tickInterval = math.max(0.25, 60 / songData.bpm)
+
+    if songData.osuChart then
+        local index = 1
+        while index <= #chart do
+            local token = chart:sub(index, index)
+            if token == "o" or token == "s" or token == "r" or token == "p" then
+                local steps = 1
+                while chart:sub(index + steps, index + steps) == "~" do
+                    steps = steps + 1
+                end
+
+                local hitAt = songData.beatOffset + (index - 1) * stepDuration
+                if hitAt < songData.duration then
+                    local seconds = math.min(steps * stepDuration, songData.duration - hitAt - 0.1)
+                    local entry = { kind = "circle", hitAt = hitAt }
+                    if token == "p" and seconds >= 0.9 then
+                        entry.kind = "spinner"
+                        entry.seconds = seconds
+                    elseif (token == "s" or token == "r") and seconds - 0.05 >= 0.3 then
+                        entry.kind = "slider"
+                        entry.seconds = seconds
+                        entry.slides = (token == "r" and seconds >= 0.6) and 2 or 1
+                    end
+                    table.insert(entries, entry)
+                end
+                index = index + steps
+            else
+                index = index + 1
+            end
+        end
+        return entries
+    end
+
     local sliderChance = songData.sliderChance or diff.sliderChance
     local allowSpinners = songData.spinners ~= false
-
     local noteTimes = {}
     for index = 1, #chart do
         if chart:sub(index, index) ~= "-" then
@@ -455,39 +654,70 @@ local function BuildObjects(songData, chart, diff)
         end
     end
 
+    for index, hitAt in ipairs(noteTimes) do
+        local nextHitAt = noteTimes[index + 1] or songData.duration
+        local gap = nextHitAt - hitAt
+        local entry = { kind = "circle", hitAt = hitAt }
+
+        if allowSpinners and gap >= SPINNER_MIN_GAP then
+            local spinSeconds = math.min(gap - SPINNER_LEAD_OUT, SPINNER_MAX_SECONDS)
+            if spinSeconds >= SPINNER_MIN_SECONDS then
+                entry.kind = "spinner"
+                entry.seconds = spinSeconds
+            end
+        end
+        if entry.kind == "circle" then
+            local available = math.min(gap - stepDuration, MAX_SLIDER_SECONDS)
+            available = math.floor(available / stepDuration) * stepDuration
+            if available >= MIN_SLIDER_SECONDS and rng() < sliderChance then
+                entry.kind = "slider"
+                entry.seconds = available
+                entry.slides = (available >= 0.9 and rng() < 0.3) and 2 or 1
+            end
+        end
+        table.insert(entries, entry)
+    end
+
+    return entries
+end
+
+-- Gibt Liste der Objekte und die maximal erreichbare Punktzahl zurück.
+-- Der Zufall (Positionen, Slider-Formen) ist pro Song fest geseedet, jeder Durchlauf
+-- sieht also gleich aus.
+local function BuildObjects(songData, chart, diff)
+    local list = {}
+    local rng = MakeRng(songData.title)
+    local tickInterval = math.max(0.25, 60 / songData.bpm)
+    local entries = CollectEntries(songData, chart, diff, rng)
+
     local maxScore = 0
     local maxCombo = 0
     local comboNumber = 0
     local previousX
     local previousY
+    local previousAngle
     local previousEnd
 
-    for index, hitAt in ipairs(noteTimes) do
-        local nextHitAt = noteTimes[index + 1] or songData.duration
-        local gap = nextHitAt - hitAt
-        local time = hitAt + songData.timingOffset
-        local obj = { kind = "circle", time = time, endTime = time, judged = false }
+    for _, entry in ipairs(entries) do
+        local time = entry.hitAt + songData.timingOffset
+        local obj = {
+            kind = entry.kind,
+            time = time,
+            endTime = time,
+            judged = false,
+            index = #list + 1,
+            slides = 1,
+        }
 
-        local sliderSeconds = 0
-        if allowSpinners and gap >= SPINNER_MIN_GAP then
-            local spinSeconds = math.min(gap - SPINNER_LEAD_OUT, SPINNER_MAX_SECONDS)
-            if spinSeconds >= SPINNER_MIN_SECONDS then
-                obj.kind = "spinner"
-                obj.endTime = time + spinSeconds
-                obj.spawnAt = time - 0.25
-            end
-        end
-        if obj.kind == "circle" then
-            local available = math.min(gap - stepDuration, MAX_SLIDER_SECONDS)
-            available = math.floor(available / stepDuration) * stepDuration
-            if available >= MIN_SLIDER_SECONDS and rng() < sliderChance then
-                sliderSeconds = available - 0.05 -- Slider-Ende wird minimal früher gewertet
-                obj.kind = "slider"
-                obj.endTime = time + sliderSeconds
-            end
-        end
-        if obj.kind ~= "spinner" then
+        if obj.kind == "spinner" then
+            obj.endTime = time + entry.seconds
+            obj.spawnAt = time - 0.25
+        else
             obj.spawnAt = time - APPROACH_SECONDS
+            if obj.kind == "slider" then
+                obj.slides = entry.slides or 1
+                obj.endTime = time + entry.seconds - 0.05 -- Slider-Ende wird minimal früher gewertet
+            end
         end
 
         if obj.kind == "spinner" then
@@ -497,81 +727,81 @@ local function BuildObjects(songData, chart, diff)
             obj.rotations = 0
             maxCombo = maxCombo + 1
             maxScore = maxScore + 100 + GetComboBonus(maxCombo)
+            previousX, previousY, previousAngle = obj.x, obj.y, nil
         else
             comboNumber = comboNumber + 1
             obj.number = (comboNumber - 1) % 9 + 1
-            obj.x, obj.y = GetNextPosition(
+            local moveAngle
+            obj.x, obj.y, moveAngle = GetNextPosition(
                 previousX,
                 previousY,
+                previousAngle,
                 previousEnd and time - previousEnd or 0,
                 obj.spawnAt,
+                time,
                 list,
                 rng
             )
             obj.points = { { obj.x, obj.y } }
             maxCombo = maxCombo + 1
             maxScore = maxScore + 300 + GetComboBonus(maxCombo)
+            previousX, previousY, previousAngle = obj.x, obj.y, moveAngle
 
             if obj.kind == "slider" then
-                local length = Clamp(sliderSeconds * SLIDER_SPEED, MIN_SLIDER_LENGTH, MAX_SLIDER_LENGTH)
-                local found = false
-                for _ = 1, 32 do
-                    local angle = rng() * PI * 2
-                    local x2 = obj.x + math.cos(angle) * length
-                    local y2 = obj.y + math.sin(angle) * length
-                    if InBounds(x2, y2) then
-                        local points = {}
-                        local clear = true
-                        for step = 1, 4 do
-                            local progress = step / 4
-                            local px = obj.x + (x2 - obj.x) * progress
-                            local py = obj.y + (y2 - obj.y) * progress
-                            if not IsPositionClear(px, py, obj.spawnAt, list) then
-                                clear = false
-                                break
-                            end
-                            table.insert(points, { px, py })
-                        end
-                        if clear then
-                            obj.x2 = x2
-                            obj.y2 = y2
-                            for _, point in ipairs(points) do
-                                table.insert(obj.points, point)
-                            end
-                            found = true
-                            break
-                        end
+                local spanSeconds = (obj.endTime - time) / obj.slides
+                local path = BuildSliderPath(obj.x, obj.y, spanSeconds, obj.spawnAt, time, list, rng)
+                if path then
+                    obj.path = path
+                    obj.points = path
+                    obj.pathLengths = { 0 }
+                    for index = 2, #path do
+                        local dx = path[index][1] - path[index - 1][1]
+                        local dy = path[index][2] - path[index - 1][2]
+                        obj.pathLengths[index] = obj.pathLengths[index - 1] + math.sqrt(dx * dx + dy * dy)
                     end
-                end
+                    obj.pathTotal = obj.pathLengths[#path]
 
-                if found then
-                    obj.ticks = {}
-                    obj.nextTick = 1
+                    -- Ticks (10) und Wendepunkte (30), danach das Ende (30)
+                    obj.events = {}
+                    obj.nextEvent = 1
                     obj.lastTracked = -1000
-                    local tickTime = time + tickInterval
-                    while tickTime < obj.endTime - 0.12 do
-                        table.insert(obj.ticks, tickTime)
-                        tickTime = tickTime + tickInterval
+                    for span = 0, obj.slides - 1 do
+                        local spanStart = time + span * spanSeconds
+                        local tickTime = spanStart + tickInterval
+                        while tickTime < spanStart + spanSeconds - 0.12 do
+                            table.insert(obj.events, { t = tickTime, points = 10 })
+                            tickTime = tickTime + tickInterval
+                        end
+                        if span < obj.slides - 1 then
+                            table.insert(obj.events, { t = spanStart + spanSeconds, points = 30 })
+                        end
                     end
-                    for _ = 1, #obj.ticks do
+                    for _, event in ipairs(obj.events) do
                         maxCombo = maxCombo + 1
-                        maxScore = maxScore + 10 + GetComboBonus(maxCombo)
+                        maxScore = maxScore + event.points + GetComboBonus(maxCombo)
                     end
                     maxCombo = maxCombo + 1
                     maxScore = maxScore + 30 + GetComboBonus(maxCombo)
+
+                    -- Ein Slider mit gerader Zahl Durchläufe endet wieder am Start.
+                    local last = path[#path]
+                    local before = path[#path - 1]
+                    if obj.slides % 2 == 0 then
+                        previousX, previousY = obj.x, obj.y
+                        previousAngle = atan2(before[2] - last[2], before[1] - last[1])
+                    else
+                        previousX, previousY = last[1], last[2]
+                        previousAngle = atan2(last[2] - before[2], last[1] - before[1])
+                    end
                 else
                     obj.kind = "circle" -- kein Platz für den Slider: normaler Kreis
+                    obj.slides = 1
                     obj.endTime = time
                 end
             end
         end
 
         table.insert(list, obj)
-        if obj.kind == "slider" then
-            previousX, previousY = obj.x2, obj.y2
-        else
-            previousX, previousY = obj.x, obj.y
-        end
         previousEnd = obj.endTime
     end
 
@@ -707,8 +937,16 @@ local function UpdateNote(obj, elapsed, cursorX, cursorY, held)
     end
 
     local progress = Clamp((elapsed - obj.time) / (obj.endTime - obj.time), 0, 1)
-    local ballX = obj.x + (obj.x2 - obj.x) * progress
-    local ballY = obj.y + (obj.y2 - obj.y) * progress
+    local travelled = progress * obj.slides
+    local span = math.min(math.floor(travelled), obj.slides - 1)
+    local fraction = travelled - span
+    if span % 2 == 1 then
+        fraction = 1 - fraction -- Rückweg bei Reverse-Slidern
+    end
+    local ballX, ballY = GetPathPoint(obj, fraction)
+    if span >= 1 then
+        view.repeatMark:Hide()
+    end
     view.ball:ClearAllPoints()
     view.ball:SetPoint("CENTER", playfield, "BOTTOMLEFT", ballX, ballY)
     view.ball:Show()
@@ -719,10 +957,14 @@ local function UpdateNote(obj, elapsed, cursorX, cursorY, held)
         obj.lastTracked = elapsed
     end
 
-    while obj.ticks[obj.nextTick] and elapsed >= obj.ticks[obj.nextTick] do
-        obj.nextTick = obj.nextTick + 1
+    while obj.events[obj.nextEvent] and elapsed >= obj.events[obj.nextEvent].t do
+        local event = obj.events[obj.nextEvent]
+        obj.nextEvent = obj.nextEvent + 1
         if elapsed - obj.lastTracked <= TRACK_GRACE_SECONDS then
-            AwardComboPoints(10)
+            AwardComboPoints(event.points)
+            if event.points >= 30 then
+                PlaySoundFile(HIT_SOUND_FILE, "SFX")
+            end
         else
             combo = 0
             scoreDirty = true
@@ -1020,18 +1262,18 @@ local function Initialize()
     approachLayer:EnableMouse(false)
     bodyLayer = CreateFrame("Frame", nil, playfield)
     bodyLayer:SetAllPoints()
-    bodyLayer:SetFrameLevel(baseLevel + 10)
+    bodyLayer:SetFrameLevel(baseLevel + 1 + LAYER_STEP)
     bodyLayer:EnableMouse(false)
     headLayer = CreateFrame("Frame", nil, playfield)
     headLayer:SetAllPoints()
-    headLayer:SetFrameLevel(baseLevel + 20)
+    headLayer:SetFrameLevel(baseLevel + 1 + LAYER_STEP * 2)
     headLayer:EnableMouse(false)
 
     spinner = {}
     spinner.frame = CreateFrame("Frame", nil, playfield)
     spinner.frame:SetSize(SPINNER_SIZE, SPINNER_SIZE)
     spinner.frame:SetPoint("CENTER", playfield, "BOTTOMLEFT", PLAYFIELD_WIDTH / 2, PLAYFIELD_HEIGHT / 2)
-    spinner.frame:SetFrameLevel(baseLevel + 30)
+    spinner.frame:SetFrameLevel(baseLevel + 1 + LAYER_STEP * 3)
     spinner.frame:EnableMouse(false)
     local spinnerBorder = CreateMaskedTexture(spinner.frame, "ARTWORK", 0)
     spinnerBorder:SetAllPoints()
@@ -1085,20 +1327,45 @@ function OsuUi:Start(challengeIDArg)
         return
     end
 
+    -- Optional: Eine Challenge kann mit challenge.osuSong (Songtitel) einen bestimmten Song
+    -- erzwingen. Songs mit exclusive = true werden nur auf diese Weise ausgewählt.
+    -- Mit challenge.osuDifficulty kommen nur Songs dieser Schwierigkeitsstufe infrage.
+    local requestedSong = challenge.osuSong
+    local requestedDifficulty = challenge.osuDifficulty
+
     local validSongs = {}
     for _, candidate in ipairs(addonTable.OsuSongs or {}) do
-        local chartSource
-        for _, source in ipairs(addonTable.GuitarHeroSongs or {}) do
-            if source.title == candidate.chartSourceTitle then
-                chartSource = source
-                break
+        local sourceChart
+        if type(candidate.osuChart) == "string" then
+            -- eigenes Osu!-Chart (o, s, r, p, ~, -)
+            local manualChart = candidate.osuChart:gsub("%s", "")
+            if #manualChart > 0 and #manualChart <= MAX_CHART_STEPS and manualChart:match("^[osrp~%-]+$") then
+                sourceChart = manualChart
+            end
+        else
+            -- Chart wird aus dem Guitar-Hero-Song übernommen
+            local chartSource
+            for _, source in ipairs(addonTable.GuitarHeroSongs or {}) do
+                if source.title == candidate.chartSourceTitle then
+                    chartSource = source
+                    break
+                end
+            end
+            if chartSource and type(chartSource.chart) == "string" then
+                local guitarChart = chartSource.chart:gsub("%s", ""):upper()
+                if #guitarChart > 0 and #guitarChart <= 1024 and guitarChart:match("^[WASD%-]+$") then
+                    sourceChart = guitarChart
+                end
             end
         end
 
-        if chartSource
+        if sourceChart
             and type(candidate.title) == "string"
+            and (requestedSong == nil or candidate.title == requestedSong)
+            and (requestedSong ~= nil or not candidate.exclusive)
+            and (requestedDifficulty == nil or candidate.difficulty == requestedDifficulty)
             and type(candidate.bpm) == "number" and candidate.bpm >= 30 and candidate.bpm <= 300
-            and type(candidate.duration) == "number" and candidate.duration > 0 and candidate.duration <= 180
+            and type(candidate.duration) == "number" and candidate.duration > 0 and candidate.duration <= MAX_SONG_SECONDS
             and type(candidate.beatOffset) == "number" and candidate.beatOffset >= 0 and candidate.beatOffset < candidate.duration
             and type(candidate.timingOffset) == "number"
             and math.abs(candidate.timingOffset) <= MAX_TIMING_OFFSET
@@ -1109,12 +1376,8 @@ function OsuUi:Start(challengeIDArg)
                 and candidate.targetScore > 0
                 and candidate.targetScore % 1 == 0
             ))
-            and type(candidate.music) == "string" and candidate.music ~= ""
-            and type(chartSource.chart) == "string" then
-            local sourceChart = chartSource.chart:gsub("%s", ""):upper()
-            if #sourceChart > 0 and #sourceChart <= 1024 and sourceChart:match("^[WASD%-]+$") then
-                table.insert(validSongs, { song = candidate, chart = sourceChart })
-            end
+            and type(candidate.music) == "string" and candidate.music ~= "" then
+            table.insert(validSongs, { song = candidate, chart = sourceChart })
         end
     end
 
@@ -1159,7 +1422,7 @@ function OsuUi:Start(challengeIDArg)
     feedbackExpiresAt = nil
     cursorFeedbackFrame:Hide()
 
-    local difficultyNames = { easy = "LEICHT", medium = "MITTEL", hard = "SCHWER" }
+    local difficultyNames = { easy = "LEICHT", medium = "MITTEL", hard = "SCHWER", legendary = "LEGENDÄR" }
     songText:SetText(song.title .. "  |  " .. (difficultyNames[song.difficulty] or string.upper(song.difficulty or "MITTEL")))
     timeText:SetText("0:00")
     statusText:SetText(TIMING_INSTRUCTION)
@@ -1174,4 +1437,4 @@ function OsuUi:Start(challengeIDArg)
     frame:Show()
     frame:Raise()
     frame:SetScript("OnUpdate", UpdateGame)
-end
+end

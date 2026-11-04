@@ -111,4 +111,15 @@ addonTable.GuitarHeroSongs = {
         targetScore = 7155,
         chart = "SW----S---WWD-WS--WDD-WD--S-D-DAA-D-SSA-S-D-S-W-S-D-S-D---W-D-DSA-W-WDS-S-S-D-SAD-D-D-S-A-D-A-ASS-DWW-S-A-DAS-SAA-A---S---A---D---D-WW--SAS-A-A--SA-S-D-S-S-A-D-A-WSA-SAW--WD-SAA-SSA-SDS-SAA-S-A-AWA-SAW--DD-AAA-DSA-W-SDD-D-SAA-S-A-D-SDW-A-DDD-S-WWW--DWDW-WDA-SDS-------WWW-D---D",
     },
+    {
+        title = "Go-Go Loser Ranger - Jikai Yokoku",
+        music = "Interface\\AddOns\\LidlRoulette\\src\\Media\\Sounds\\GuitarHero\\GoGoLoserRanger.ogg",
+        bpm = 160,
+        duration = 90,
+        beatOffset = 0.183,
+        stepsPerBeat = 2,
+        difficulty = "hard",
+        targetScore = 10890,
+        chart = "--------D-S-D-W--WD-A-S-----D-A-WDW---S-W-W-S-W-D-D-S-S-D---A-AD-SW-S-S-D---DAA-DD--W-S-WD-W--S-D---WSS-D-W-W-A-W-W-D-S-D--DW-S-S-----D-D-A-------S---D-----S-S-D----S--D-S-----D-----W-----A-S-W-A-S-S-----A-S-----S-W--SW-S-S--WD-S-S--AA-S-D--SD-S-A--DS-WW----S-A-DA-SD-A-W--AD-S-A---D-W-WA--S-S-AA--S-A-DA-WD-S-D---WDA-W-S-S-A-A--SD-W-D--SA-S-W--SW-A-W---A-S-AA-SS-A-D--SD-S-W--AA-W-D-S-A-S-S--AD-S-S--AW-S-S--DD-A-A--SA-S-S--AD-S-S--AD-S-A--SD-A-A---------------------------------",
+    },
 }
