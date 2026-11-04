@@ -22,7 +22,6 @@ local isActive = false
 local isPaused = false
 local musicVolumeBeforeChallenge
 local comboMusicPlaying = false
-local comboMusicHandle
 
 local ranks = {
     { hits = 40, rank = "SSS", name = "Smokin' Sexy Style!", color = { 1, 0.25, 0.42 } },
@@ -58,49 +57,31 @@ local function StartComboMusic()
     musicFrame = musicFrame or CreateFrame("Frame")
     musicFrame:SetScript("OnUpdate", nil)
 
-    local soundStarted
-    soundStarted, comboMusicHandle = PlaySoundFile(MUSIC_FILE, "SFX")
-    if not soundStarted then
-        comboMusicHandle = nil
-        if musicVolumeBeforeChallenge ~= nil then
-            local originalVolume = musicVolumeBeforeChallenge
-            FadeMusicVolume(originalVolume, function()
-                if not comboMusicPlaying then
-                    musicVolumeBeforeChallenge = nil
-                end
-            end)
-        end
-        return
-    end
-
     if musicVolumeBeforeChallenge == nil then
         musicVolumeBeforeChallenge = tonumber(GetCVar("Sound_MusicVolume"))
     end
-    comboMusicPlaying = true
-    if musicVolumeBeforeChallenge ~= nil and musicVolumeBeforeChallenge > 0 then
-        FadeMusicVolume(0)
-    end
-end
-
-local function StopComboMusic()
-    if not comboMusicPlaying then
+    if musicVolumeBeforeChallenge == nil then
         return
     end
 
-    if comboMusicHandle then
-        StopSound(comboMusicHandle)
-        comboMusicHandle = nil
+    SetCVar("Sound_MusicVolume", "0")
+    PlayMusic(MUSIC_FILE)
+    comboMusicPlaying = true
+    FadeMusicVolume(musicVolumeBeforeChallenge)
+end
+
+local function StopComboMusic()
+    if not comboMusicPlaying or musicVolumeBeforeChallenge == nil then
+        return
     end
-    comboMusicPlaying = false
 
     local originalVolume = musicVolumeBeforeChallenge
-    if originalVolume ~= nil then
-        FadeMusicVolume(originalVolume, function()
-            if not comboMusicPlaying then
-                musicVolumeBeforeChallenge = nil
-            end
-        end)
-    end
+    FadeMusicVolume(0, function()
+        StopMusic()
+        SetCVar("Sound_MusicVolume", tostring(originalVolume))
+        musicVolumeBeforeChallenge = nil
+        comboMusicPlaying = false
+    end)
 end
 
 local function Initialize()

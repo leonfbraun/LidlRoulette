@@ -15,6 +15,7 @@ function AnnouncementUi:Initialize()
     announcementFrame = CreateFrame("Frame", nil, UIParent)
     announcementFrame:SetSize(900, 150)
     announcementFrame:SetPoint("CENTER", UIParent, "CENTER", 0, 350)
+    announcementFrame:SetFrameStrata("TOOLTIP")
 
     playerAnnouncementText = announcementFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     playerAnnouncementText:SetFont("Fonts\\FRIZQT__.TTF", 26, "OUTLINE")
@@ -50,6 +51,9 @@ end
 
 function AnnouncementUi:ShowAnnouncement(playerName, challengerName, level, challengeID, command, comboHighScore, challengeSong, targetScore, taxSilver)
     local announcementMessage
+    local challenge = challengeID and addonTable.Roulette.GetChallenge(challengeID)
+    local compactTitle
+    local compactDescription
     if command == "DEATH" then
         announcementMessage = "|cffffffff" .. playerName .. "|r ist mit Level " .. tostring(level) .. " gestorben"
     elseif command == "LEVELUP" then
@@ -62,39 +66,61 @@ function AnnouncementUi:ShowAnnouncement(playerName, challengerName, level, chal
         announcementMessage = "|cffffffff" .. playerName .. "|r hat den Challenge-Timer abgebrochen."
     elseif command == "GUITARHEROFINISHED" then
         announcementMessage = "|cffffffff" .. playerName .. "|r hat Guitar Hero gespielt!"
+    elseif command == "OSUFINISHED" then
+        announcementMessage = "|cffffffff" .. playerName .. "|r hat Osu! gespielt!"
     else
         return
     end
 
-    if comboHighScore ~= nil and (command == "TIMERFINISHED" or command == "TIMERCANCELED") then
-        local challenge = addonTable.Roulette.GetChallenge(challengeID)
+    local isComboChallenge = challenge and (challenge.bayonettaCombo or challenge.devilMayCryCombo)
+    local isRhythmChallenge = command == "GUITARHEROFINISHED" or command == "OSUFINISHED"
+    if isComboChallenge and (command == "TIMERFINISHED" or command == "TIMERCANCELED") then
+        local timerStatus = command == "TIMERFINISHED" and "Timer beendet" or "Timer abgebrochen"
+        announcementMessage = timerStatus .. " - |cffffffff" .. playerName .. "|r"
+        local scoreUnit = challenge and challenge.bayonettaCombo and " Combo Points" or " Treffer"
+        compactTitle = challenge.title .. (comboHighScore ~= nil and
+            (" - Highscore: " .. tostring(comboHighScore) .. scoreUnit) or "")
+    elseif isRhythmChallenge then
+        local challengeName = challenge and challenge.title or (command == "GUITARHEROFINISHED" and "Guitar Hero" or "Osu!")
+        announcementMessage = "|cffffffff" .. playerName .. "|r - " .. challengeName
+        compactTitle = "Song: " .. tostring(challengeSong or "Unbekannt")
+        compactDescription = "Score: " .. tostring(comboHighScore or "-") ..
+            (targetScore and (" / " .. tostring(targetScore)) or "") .. " Punkte"
+        -- Steuern fallen nur bei nicht bestandener Runde an. Das erfasst auch einen Abbruch, bei dem
+        -- die Punktzahl das Ziel schon erreicht hatte.
+        local isTaxed = taxSilver ~= nil and taxSilver > 0
+        if targetScore and comboHighScore ~= nil and comboHighScore >= targetScore and not isTaxed then
+            compactDescription = compactDescription .. " - |cff73ff8cZiel erreicht!|r"
+        elseif targetScore and comboHighScore ~= nil then
+            compactDescription = compactDescription .. " - |cffff4747Ziel verfehlt, Steuern: " ..
+                tostring(taxSilver or addonTable:GetTaxSilver(level)) .. " Silber|r"
+        end
+    elseif comboHighScore ~= nil and (command == "TIMERFINISHED" or command == "TIMERCANCELED") then
         local scoreUnit = challenge and challenge.bayonettaCombo and " Combo Points" or " Treffer"
         announcementMessage = announcementMessage .. "\nCombo-Highscore: |cffffb52e" .. tostring(comboHighScore) .. scoreUnit .. "|r"
-    elseif comboHighScore ~= nil and command == "GUITARHEROFINISHED" then
-        announcementMessage = announcementMessage .. "\nSong: |cffffb52e" .. tostring(challengeSong or "Unbekannt") ..
-            "|r\nScore: |cffffb52e" .. tostring(comboHighScore) ..
-            (targetScore and (" / " .. tostring(targetScore)) or "") .. " Punkte|r"
-        if targetScore and comboHighScore >= targetScore then
-            announcementMessage = announcementMessage .. "\nZielscore erreicht. Keine Steuern!"
-        elseif targetScore then
-            announcementMessage = announcementMessage .. "\nZielscore verfehlt. Steuern: |cffffb52e" ..
-                tostring(taxSilver or (level * 2)) .. " Silber|r an die Gilde zahlen (Level x2)."
-        end
     end
     
     playerAnnouncementText:SetText(announcementMessage)
     print("|cff2674cc[L|cffff0000i|rDL Roulette]|r " .. announcementMessage)
 
     if(challengeID) then
-        local challenge = addonTable.Roulette.GetChallenge(challengeID)
-        local rarityColorCode = addonTable.Roulette.GetRarityColorHexCode(challenge.rarity)
-        local challengeTitle = "Challenge: |cff" .. rarityColorCode .. "[" .. challenge.title .. "]|r"
+        if compactTitle then
+            challengeTitleText:SetText(compactTitle)
+            challengeDescriptionText:SetText(compactDescription or "")
+            print("|cff2674cc[L|cffff0000i|rDL Roulette]|r " .. compactTitle)
+            if compactDescription then
+                print("|cff2674cc[L|cffff0000i|rDL Roulette]|r " .. compactDescription)
+            end
+        else
+            local rarityColorCode = addonTable.Roulette.GetRarityColorHexCode(challenge.rarity)
+            local challengeTitle = "Challenge: |cff" .. rarityColorCode .. "[" .. challenge.title .. "]|r"
 
-        challengeTitleText:SetText(challengeTitle)
-        challengeDescriptionText:SetText(challenge.description)
+            challengeTitleText:SetText(challengeTitle)
+            challengeDescriptionText:SetText(challenge.description)
 
-        print("|cff2674cc[L|cffff0000i|rDL Roulette]|r " .. challengeTitle)
-        print("|cff2674cc[L|cffff0000i|rDL Roulette]|r " .. challenge.description)
+            print("|cff2674cc[L|cffff0000i|rDL Roulette]|r " .. challengeTitle)
+            print("|cff2674cc[L|cffff0000i|rDL Roulette]|r " .. challenge.description)
+        end
     else
         challengeTitleText:SetText("")
         challengeDescriptionText:SetText("")

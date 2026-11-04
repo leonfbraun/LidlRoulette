@@ -23,6 +23,10 @@ local function EnsureSavedSettings()
     if LidlRouletteDB.settings.areClankerChallengesEnabled == nil then
         LidlRouletteDB.settings.areClankerChallengesEnabled = true
     end
+
+    if LidlRouletteDB.settings.areMusicChallengesEnabled == nil then
+        LidlRouletteDB.settings.areMusicChallengesEnabled = true
+    end
 end
 
 EnsureSavedSettings()
@@ -34,6 +38,15 @@ local function GetPlayerFullName()
     end
 
     return firstName
+end
+
+function addonTable:GetTaxSilver(playerLevel)
+    playerLevel = playerLevel or UnitLevel("player") or 1
+    if playerLevel <= 20 then
+        return playerLevel
+    end
+
+    return playerLevel + 5 * math.ceil((playerLevel - 20) / 10)
 end
 
 local savedVariablesFrame = CreateFrame("Frame")
@@ -187,10 +200,11 @@ end
 function addonTable:PrintHelp()
     print("|cff2674cc[L|cffff0000i|rDL Roulette]|r Addon geladen. Version: " .. self.VERSION)
     print("|cff2674cc[L|cffff0000i|rDL Roulette]|r Verfügbare Befehle:")
-    print("|cff2674cc/lidl test|r - Zeigt eine Test-Challenge an.")
-    print("|cff2674cc/lidl test1|r - Zeigt eine Test-Meldung an.")
-    print("|cff2674cc/lidl challenge <ID>|r - Zeigt eine bestimmte Challenge zum Testen an.")
-    print("|cff2674cc/lidl challenges|r - Listet alle verfügbaren Challenges auf.")
+    -- print("|cff2674cc/lidl test|r - Zeigt eine Test-Challenge an.")
+    -- print("|cff2674cc/lidl test1|r - Zeigt eine Test-Meldung an.")
+    -- print("|cff2674cc/lidl challenge <ID>|r - Zeigt eine bestimmte Challenge zum Testen an.")
+    -- print("|cff2674cc/lidl challenges|r - Listet alle verfügbaren Challenges auf.")
+    print("|cff2674cc/lidl steuer|r - Zeigt deine Steuern in Silber an.")
 end
 
 SLASH_LEVELROULETTE1 = "/lidl"
@@ -222,6 +236,12 @@ SlashCmdList["LEVELROULETTE"] = function(message)
         for id, challenge in ipairs(addonTable.Challenges) do
             print("|cff2674cc" .. tostring(id) .. ".|r " .. challenge.title)
         end
+        return
+    end
+
+    if message == "steuer" then
+        local taxSilver = addonTable:GetTaxSilver()
+        print("|cff2674cc[L|cffff0000i|rDL Roulette]|r Deine Steuern betragen " .. tostring(taxSilver) .. " Silber.")
         return
     end
 
