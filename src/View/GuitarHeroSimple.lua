@@ -3,6 +3,42 @@ local addonName, addonTable = ...
 addonTable.GuitarHeroUi = {}
 local GuitarHeroUi = addonTable.GuitarHeroUi
 
+-- Ablauf
+local COUNTDOWN_SECONDS = 3
+local MUSIC_FADE_SECONDS = 0.8
+
+-- Wertung
+local HIT_WINDOW = 0.24         -- bis hierhin zählt ein Tastendruck als Treffer (± Sekunden)
+local WRONG_KEY_WINDOW = 0.12   -- falsche Taste kostet die Note nur, wenn sie so nah dran liegt
+local PERFECT_WINDOW = 0.05
+local GOOD_WINDOW = 0.1
+local MULTIPLIER_STEPS = {      -- absteigend sortiert
+    { combo = 50, multiplier = 4 },
+    { combo = 25, multiplier = 3 },
+    { combo = 10, multiplier = 2 },
+}
+local COMBO_MILESTONE = 50      -- ab 100 gibt es alle 50 Treffer ein Banner
+local RANKS = {                 -- absteigend sortiert, Anteil gewichteter Treffer
+    { rank = "S", accuracy = 0.95, color = { 1, 0.84, 0.25 } },
+    { rank = "A", accuracy = 0.85, color = { 0.35, 1, 0.5 } },
+    { rank = "B", accuracy = 0.7, color = { 0.35, 0.75, 1 } },
+    { rank = "C", accuracy = 0.55, color = { 1, 0.65, 0.25 } },
+    { rank = "D", accuracy = 0, color = { 1, 0.3, 0.3 } },
+}
+local JUDGEMENTS = {
+    perfect = { text = "PERFEKT", weight = 1, color = { 0.45, 1, 0.55 }, particles = 10 },
+    good = { text = "GUT", weight = 0.75, color = { 1, 0.9, 0.3 }, particles = 6 },
+    ok = { text = "OK", weight = 0.5, color = { 1, 0.62, 0.25 }, particles = 3 },
+}
+local MISS_COLOR = { 1, 0.28, 0.28 }
+
+-- targetScore in GuitarHeroSongs.lua ist ohne Multiplikator angegeben. Das tatsächliche Ziel ist
+-- das, was eine Referenzrunde mit Multiplikator erreicht: So viele Treffer mit REFERENCE_POINTS,
+-- dass ohne Multiplikator genau targetScore herauskäme, und die Fehler in kleinen Gruppen verteilt.
+local REFERENCE_POINTS = 75
+local REFERENCE_MISS_CLUSTER = 4
+
+-- Layout
 local LANE_KEYS = { "W", "A", "S", "D" }
 local LANE_COLORS = {
     W = { 0.25, 0.85, 0.42 },
@@ -10,55 +46,168 @@ local LANE_COLORS = {
     S = { 0.9, 0.3, 0.28 },
     D = { 0.25, 0.62, 0.95 },
 }
-local COUNTDOWN_SECONDS = 3
-local HIT_WINDOW = 0.24
-local TICK_SECONDS = 0.1
-local MUSIC_FADE_SECONDS = 0.8
+local HYPE_COLORS = {
+    { 0.55, 0.6, 0.7 },
+    { 0.3, 0.8, 1 },
+    { 0.85, 0.4, 1 },
+    { 1, 0.78, 0.2 },
+}
+local FRAME_WIDTH = 780
+local FRAME_HEIGHT = 680
+local LANE_WIDTH = 90
+local HIGHWAY_WIDTH = LANE_WIDTH * #LANE_KEYS
+local HIGHWAY_HEIGHT = 570
+local HIT_Y = 72
+local NOTE_SIZE = 62
+local PAD_SIZE = 70
+local PANEL_WIDTH = 178
+local PROGRESS_WIDTH = 720
+local BAR_WIDTH = 170
+local FONT = "Fonts\\FRIZQT__.TTF"
+local WHITE = "Interface\\Buttons\\WHITE8X8"
+local CIRCLE_MASK = "Interface\\CHARACTERFRAME\\TempPortraitAlphaMask"
+local MULTIPLIER_SOUND = "Interface\\AddOns\\LidlRoulette\\src\\Media\\Sounds\\OSU\\OsuHitSound.ogg"
+local TARGET_REACHED_SOUND = 888
+local COUNTDOWN_SOUND = SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON
+
+-- Noten
 local NOTE_TRAVEL_SECONDS = 1.1
-local NOTE_FALL_DISTANCE = 260
-local LANE_HIT_Y = 55
-local MAX_MARKERS = 16
+local NOTE_START_Y = HIGHWAY_HEIGHT + NOTE_SIZE / 2
+local NOTE_SPEED = (NOTE_START_Y - HIT_Y) / NOTE_TRAVEL_SECONDS
+local NOTE_FADE_SECONDS = 0.14
+local NOTE_TAIL_SECONDS = HIT_WINDOW + 0.12 -- so lange fällt eine verpasste Note noch sichtbar weiter
+local PAD_HINT_SECONDS = 0.14
+
+-- Effekte
+local BEAT_LINE_COUNT = 8       -- reicht bis 300 BPM
+local PARTICLE_COUNT = 48
+local PARTICLE_SECONDS = 0.45
+local PARTICLE_GRAVITY = 900
+local FLASH_SECONDS = 0.28
+local MISS_FLASH_SECONDS = 0.3
+local SCORE_ROLL_SPEED = 12     -- Anteil der Differenz pro Sekunde
+
+local DIFFICULTY_LABELS = {
+    easy = "|cff59ff7aLEICHT|r",
+    medium = "|cffffdf4aMITTEL|r",
+    hard = "|cffff5c5cSCHWER|r",
+}
 
 local frame
+local highway
+local noteLayer
+local fxLayer
 local songText
-local scoreText
-local statusText
+local difficultyText
 local timeText
-local laneLabels = {}
-local laneFeedbackTexts = {}
-local laneFeedbackExpires = {}
-local laneOffsets = {}
+local progressBar
+local scoreText
+local recordText
+local targetLabel
+local targetBar
+local countersText
+local accuracyText
+local multiplierPopup
+local multiplierBar
+local comboText
+local bestComboText
+local hintText
+local closeButton
+local missFlash
+local missFlashAt
+local hypeLeft
+local hypeRight
+local comboPopup
+local countdownPopup
+local bannerPopup
+local results
+local laneViews = {}
+local beatLines = {}
+local particles = {}
+local nextParticle = 1
 local markerPool = {}
 local activeMarkers = {}
-local closeButton
-local ticker
+
 local musicFadeTicker
 local songSoundHandle
 local musicVolumeBeforeGame
-local sessionID = 0
+local musicVolumeRestoring
+local keyboardReady = false
+
 local song
 local challengeID
-local chart
-local stepDuration
-local stepCount
-local nextVisualStep = 0
-local nextMissCheckStep = 0
+local notes = {}
+local targetScore = 0
+local nextToSpawn = 1
+local nextToExpire = 1
+local beatDuration
 local startedAt
-local countdownAt
-local lastDisplayedStep = -1
-local judgedSteps = {}
-local lastDisplayedSecond = -1
 local lastCountdownNumber
+local lastDisplayedSecond
+local pressedKeys = {}
+local counts = {}
 local score = 0
-local hits = 0
-local misses = 0
+local displayedScore = 0
+local lastShownScore
 local combo = 0
+local bestCombo = 0
+local multiplier = 1
+local timingSum = 0
+local timingCount = 0
+local judgedWeight = 0
+local judgedNotes = 0
+local previousRecord
+local targetReached = false
+local panelsDirty = false
 local active = false
 local musicStarted = false
 
-local function UpdateScore()
-    scoreText:SetText(string.format("%05d / ZIEL %05d    COMBO %d", score, song and song.targetScore or 0, combo))
+local function FormatNumber(value)
+    local text = tostring(math.floor(value))
+    local formatted = text:reverse():gsub("(%d%d%d)", "%1."):reverse()
+    return (formatted:gsub("^%.", ""))
 end
+
+local function GetMultiplier(comboLength)
+    for _, step in ipairs(MULTIPLIER_STEPS) do
+        if comboLength >= step.combo then
+            return step.multiplier
+        end
+    end
+    return 1
+end
+
+local function ComputeTargetScore(noteCount, baseTarget)
+    local hitRatio = math.min(baseTarget / (noteCount * REFERENCE_POINTS), 0.98)
+    local streakLength = math.max(1, math.floor(REFERENCE_MISS_CLUSTER * hitRatio / (1 - hitRatio) + 0.5))
+    local total = 0
+    local played = 0
+    while played < noteCount do
+        for streak = 1, streakLength do
+            if played >= noteCount then
+                break
+            end
+            total = total + REFERENCE_POINTS * GetMultiplier(streak)
+            played = played + 1
+        end
+        played = played + REFERENCE_MISS_CLUSTER
+    end
+    return math.max(baseTarget, math.floor(total / 10 + 0.5) * 10)
+end
+
+local function GetRecords()
+    if type(LidlRouletteDB) ~= "table" then
+        return nil
+    end
+    if type(LidlRouletteDB.guitarHeroRecords) ~= "table" then
+        LidlRouletteDB.guitarHeroRecords = {}
+    end
+    return LidlRouletteDB.guitarHeroRecords
+end
+
+-- ---------------------------------------------------------------------------
+-- Hintergrundmusik
+-- ---------------------------------------------------------------------------
 
 local function FadeBackgroundMusic(targetVolume, onFinished)
     if musicFadeTicker then
@@ -74,16 +223,14 @@ local function FadeBackgroundMusic(targetVolume, onFinished)
         return
     end
 
-    local startedAt = GetTime()
+    local fadeStartedAt = GetTime()
     musicFadeTicker = C_Timer.NewTicker(0.05, function()
-        local progress = math.min((GetTime() - startedAt) / MUSIC_FADE_SECONDS, 1)
+        local progress = math.min((GetTime() - fadeStartedAt) / MUSIC_FADE_SECONDS, 1)
         local volume = startVolume + (targetVolume - startVolume) * progress
         SetCVar("Sound_MusicVolume", string.format("%.3f", volume))
 
         if progress >= 1 then
-            if musicFadeTicker then
-                musicFadeTicker:Cancel()
-            end
+            musicFadeTicker:Cancel()
             musicFadeTicker = nil
             if onFinished then
                 onFinished()
@@ -92,57 +239,523 @@ local function FadeBackgroundMusic(targetVolume, onFinished)
     end)
 end
 
-local function ShowLaneFeedback(key, wasHit)
-    local feedbackText = laneFeedbackTexts[key]
-    if not feedbackText then
+local function MuteBackgroundMusic()
+    -- Läuft das Einblenden der letzten Runde noch, ist der aktuelle CVar nur ein Zwischenwert.
+    musicVolumeBeforeGame = musicVolumeRestoring or tonumber(GetCVar("Sound_MusicVolume"))
+    musicVolumeRestoring = nil
+    if musicVolumeBeforeGame ~= nil and musicVolumeBeforeGame > 0 then
+        FadeBackgroundMusic(0)
+    end
+end
+
+local function RestoreBackgroundMusic()
+    if musicVolumeBeforeGame == nil then
+        return
+    end
+    musicVolumeRestoring = musicVolumeBeforeGame
+    musicVolumeBeforeGame = nil
+    FadeBackgroundMusic(musicVolumeRestoring, function()
+        musicVolumeRestoring = nil
+    end)
+end
+
+-- ---------------------------------------------------------------------------
+-- Tastatur
+-- ---------------------------------------------------------------------------
+
+-- SetPropagateKeyboardInput ist im Kampf gesperrt. Dort lösen W/A/S/D zusätzlich ihre Keybinds aus.
+local function SetKeyPropagation(enabled)
+    if not InCombatLockdown() then
+        frame:SetPropagateKeyboardInput(enabled)
+    end
+end
+
+-- Ein neuer Frame würde alle Tasten schlucken. Die Tastatur wird daher erst aktiviert, sobald
+-- die Weitergabe eingeschaltet werden kann. Bis dahin lassen sich die Kreise anklicken.
+local function PrepareKeyboard()
+    if keyboardReady or InCombatLockdown() then
+        return
+    end
+    frame:SetPropagateKeyboardInput(true)
+    frame:EnableKeyboard(true)
+    keyboardReady = true
+    hintText:SetText("Taste drücken, wenn die Note den Kreis erreicht.")
+end
+
+-- ---------------------------------------------------------------------------
+-- Bausteine der Darstellung
+-- ---------------------------------------------------------------------------
+
+local function CreateSolid(parent, layer, sublevel, red, green, blue, alpha)
+    local texture = parent:CreateTexture(nil, layer, nil, sublevel)
+    texture:SetColorTexture(red, green, blue, alpha or 1)
+    return texture
+end
+
+local function CreateCircle(parent, layer, sublevel, size)
+    local texture = parent:CreateTexture(nil, layer, nil, sublevel)
+    texture:SetTexture(WHITE)
+    texture:SetSize(size, size)
+    local mask = parent:CreateMaskTexture()
+    mask:SetTexture(CIRCLE_MASK)
+    mask:SetAllPoints(texture)
+    texture:AddMaskTexture(mask)
+    return texture
+end
+
+local function CreateGradient(parent, layer, sublevel, orientation, color, fromAlpha, toAlpha)
+    local texture = parent:CreateTexture(nil, layer, nil, sublevel)
+    texture:SetTexture(WHITE)
+    texture:SetGradient(orientation,
+        CreateColor(color[1], color[2], color[3], fromAlpha),
+        CreateColor(color[1], color[2], color[3], toAlpha))
+    return texture
+end
+
+local function CreateText(parent, size, layer)
+    local text = parent:CreateFontString(nil, layer or "OVERLAY", "GameFontNormal")
+    text:SetFont(FONT, size, "OUTLINE")
+    return text
+end
+
+-- Text, der aufploppt, nach oben wandert und ausblendet. Die Größe wird über einen inneren Frame
+-- animiert, damit der Mittelpunkt beim Skalieren an Ort und Stelle bleibt.
+local function CreatePopup(parent, fontSize, anchor, x, y, seconds, rise)
+    local popup = { anchor = anchor, x = x, y = y, seconds = seconds, rise = rise or 0 }
+    popup.holder = CreateFrame("Frame", nil, parent)
+    popup.holder:SetSize(10, 10)
+    popup.holder:SetPoint("CENTER", anchor, "BOTTOM", x, y)
+    popup.inner = CreateFrame("Frame", nil, popup.holder)
+    popup.inner:SetSize(10, 10)
+    popup.inner:SetPoint("CENTER")
+    popup.text = CreateText(popup.inner, fontSize)
+    popup.text:SetPoint("CENTER")
+    popup.subText = CreateText(popup.inner, math.floor(fontSize * 0.65))
+    popup.subText:SetPoint("TOP", popup.text, "BOTTOM", 0, -1)
+    popup.holder:Hide()
+    return popup
+end
+
+local function PlayPopup(popup, text, color, subText)
+    popup.text:SetText(text)
+    popup.text:SetTextColor(color[1], color[2], color[3])
+    popup.subText:SetText(subText or "")
+    popup.subText:SetTextColor(color[1], color[2], color[3])
+    popup.bornAt = GetTime()
+    popup.holder:SetAlpha(1)
+    popup.holder:Show()
+end
+
+local function UpdatePopup(popup, now)
+    if not popup.bornAt then
         return
     end
 
-    feedbackText:SetText(wasHit and "HIT!" or "MISS!")
-    if wasHit then
-        feedbackText:SetTextColor(0.35, 1, 0.4)
-    else
-        feedbackText:SetTextColor(1, 0.25, 0.25)
+    local progress = (now - popup.bornAt) / popup.seconds
+    if progress >= 1 then
+        popup.bornAt = nil
+        popup.holder:Hide()
+        return
     end
-    feedbackText:Show()
-    laneFeedbackExpires[key] = GetTime() + 0.65
+
+    local growth = math.max(0, 1 - progress / 0.15)
+    popup.inner:SetScale(1 + 0.45 * growth)
+    popup.holder:SetAlpha(progress > 0.6 and (1 - progress) / 0.4 or 1)
+    if popup.rise ~= 0 then
+        popup.holder:ClearAllPoints()
+        popup.holder:SetPoint("CENTER", popup.anchor, "BOTTOM", popup.x, popup.y + popup.rise * progress)
+    end
 end
 
-local function ReleaseMarker(marker)
-    marker.active = false
-    marker.label:Hide()
+local function HidePopup(popup)
+    popup.bornAt = nil
+    popup.holder:Hide()
 end
 
-local function AcquireMarker()
-    for _, marker in ipairs(markerPool) do
-        if not marker.active then
-            marker.active = true
-            marker.label:Show()
-            return marker
-        end
-    end
+local function CreateMarker()
+    local marker = {}
+    marker.frame = CreateFrame("Frame", nil, noteLayer)
+    marker.frame:SetSize(NOTE_SIZE, NOTE_SIZE)
 
-    if #markerPool >= MAX_MARKERS then
-        return nil
-    end
+    marker.glow = CreateCircle(marker.frame, "BACKGROUND", 0, NOTE_SIZE * 1.4)
+    marker.glow:SetPoint("CENTER")
+    marker.glow:SetBlendMode("ADD")
 
-    local label = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    label:SetFont("Fonts\\FRIZQT__.TTF", 28, "OUTLINE")
-    local marker = { label = label, active = true }
+    local rim = CreateCircle(marker.frame, "ARTWORK", 0, NOTE_SIZE)
+    rim:SetPoint("CENTER")
+    rim:SetVertexColor(0.02, 0.02, 0.04, 1)
+
+    marker.body = CreateCircle(marker.frame, "ARTWORK", 1, NOTE_SIZE - 6)
+    marker.body:SetPoint("CENTER")
+
+    local shine = CreateCircle(marker.frame, "ARTWORK", 2, NOTE_SIZE * 0.5)
+    shine:SetPoint("CENTER", 0, NOTE_SIZE * 0.16)
+    shine:SetVertexColor(1, 1, 1, 0.22)
+
+    marker.label = CreateText(marker.frame, 24)
+    marker.label:SetPoint("CENTER")
     table.insert(markerPool, marker)
-    label:Show()
     return marker
 end
 
-local function RemoveMarkerForStep(stepIndex)
-    for index = #activeMarkers, 1, -1 do
-        local marker = activeMarkers[index]
-        if marker.stepIndex == stepIndex then
-            ReleaseMarker(marker)
+local function AcquireMarker(note, now)
+    local marker
+    for _, candidate in ipairs(markerPool) do
+        if not candidate.note then
+            marker = candidate
+            break
+        end
+    end
+    marker = marker or CreateMarker()
+
+    local color = LANE_COLORS[note.key]
+    marker.note = note
+    marker.spawnedAt = now
+    marker.label:SetText(note.key)
+    marker.label:SetTextColor(1, 1, 1)
+    marker.body:SetGradient("VERTICAL",
+        CreateColor(color[1] * 0.55, color[2] * 0.55, color[3] * 0.55, 1),
+        CreateColor(color[1], color[2], color[3], 1))
+    marker.glow:SetVertexColor(color[1], color[2], color[3], 0.3)
+    marker.frame:SetAlpha(0)
+    marker.frame:Show()
+    note.marker = marker
+    table.insert(activeMarkers, marker)
+    return marker
+end
+
+local function ReleaseMarker(marker)
+    marker.frame:Hide()
+    marker.note.marker = nil
+    marker.note = nil
+    for index, candidate in ipairs(activeMarkers) do
+        if candidate == marker then
             table.remove(activeMarkers, index)
             return
         end
     end
+end
+
+-- ---------------------------------------------------------------------------
+-- Effekte
+-- ---------------------------------------------------------------------------
+
+local function SpawnParticles(key, count, color)
+    local now = GetTime()
+    local laneX = laneViews[key].x
+    for _ = 1, count do
+        local particle = particles[nextParticle]
+        nextParticle = nextParticle % PARTICLE_COUNT + 1
+        local angle = math.random() * math.pi
+        local speed = 120 + math.random() * 240
+        particle.bornAt = now
+        particle.x = laneX
+        particle.velocityX = math.cos(angle) * speed
+        particle.velocityY = math.sin(angle) * speed
+        particle.texture:SetVertexColor(color[1], color[2], color[3], 1)
+        particle.texture:Show()
+    end
+end
+
+local function UpdateFlash(texture, startedFlashAt, seconds, strength, now)
+    if not startedFlashAt then
+        texture:SetAlpha(0)
+        return
+    end
+    texture:SetAlpha(math.max(0, 1 - (now - startedFlashAt) / seconds) * strength)
+end
+
+local function SetHype(value)
+    local color = HYPE_COLORS[value]
+    hypeLeft:SetGradient("HORIZONTAL", CreateColor(color[1], color[2], color[3], 0.75), CreateColor(color[1], color[2], color[3], 0))
+    hypeRight:SetGradient("HORIZONTAL", CreateColor(color[1], color[2], color[3], 0), CreateColor(color[1], color[2], color[3], 0.75))
+    multiplierPopup.text:SetTextColor(color[1], color[2], color[3])
+    multiplierBar:SetColorTexture(color[1], color[2], color[3], 1)
+    frame:SetBackdropBorderColor(color[1], color[2], color[3], 1)
+end
+
+local function UpdatePanels()
+    panelsDirty = false
+
+    multiplierPopup.text:SetText("x" .. multiplier)
+    multiplierPopup.holder:Show()
+
+    -- Fortschritt bis zum nächsten Multiplikator
+    local fromCombo = 0
+    local toCombo
+    for _, step in ipairs(MULTIPLIER_STEPS) do
+        if combo >= step.combo then
+            fromCombo = step.combo
+            break
+        end
+        toCombo = step.combo
+    end
+    local fill = toCombo and (combo - fromCombo) / (toCombo - fromCombo) or 1
+    multiplierBar:SetWidth(math.max(1, BAR_WIDTH * fill))
+
+    comboText:SetText(combo)
+    bestComboText:SetText("BESTE  " .. bestCombo)
+    if combo >= 5 then
+        comboPopup.text:SetText(combo)
+        comboPopup.holder:Show()
+    else
+        comboPopup.holder:Hide()
+    end
+
+    countersText:SetText(string.format(
+        "|cff73ff8cPerfekt  %d|r\n|cffffe64dGut  %d|r\n|cffff9e40OK  %d|r\n|cffff4747Miss  %d|r",
+        counts.perfect, counts.good, counts.ok, counts.miss))
+    accuracyText:SetText(judgedNotes > 0
+        and string.format("GENAUIGKEIT  %d%%", math.floor(judgedWeight / judgedNotes * 100 + 0.5))
+        or "GENAUIGKEIT  -")
+end
+
+local function UpdateScoreDisplay(now, frameSeconds)
+    if displayedScore ~= score then
+        local difference = score - displayedScore
+        displayedScore = displayedScore + difference * math.min(1, frameSeconds * SCORE_ROLL_SPEED)
+        if math.abs(score - displayedScore) < 1 then
+            displayedScore = score
+        end
+    end
+
+    local shown = math.floor(displayedScore)
+    if shown == lastShownScore then
+        return
+    end
+    lastShownScore = shown
+    scoreText:SetText(FormatNumber(shown))
+    targetBar:SetWidth(math.max(1, BAR_WIDTH * math.min(1, shown / targetScore)))
+    if shown >= targetScore then
+        targetBar:SetColorTexture(1, 0.8, 0.2, 1)
+        targetLabel:SetText("|cffffcc33ZIEL ERREICHT|r")
+    end
+end
+
+-- Läuft auch auf dem Ergebnisbildschirm weiter, damit laufende Effekte sauber ausklingen.
+local function UpdateEffects(now, frameSeconds)
+    for _, key in ipairs(LANE_KEYS) do
+        local lane = laneViews[key]
+        local pressed = pressedKeys[key] and 1 or 0
+        local hint = 0
+        for _, marker in ipairs(activeMarkers) do
+            local note = marker.note
+            if note.key == key and not note.judged and math.abs(note.t - (now - startedAt)) <= PAD_HINT_SECONDS then
+                hint = 0.35
+                break
+            end
+        end
+
+        local flash = lane.flashAt and math.max(0, 1 - (now - lane.flashAt) / FLASH_SECONDS) or 0
+        lane.padFill:SetAlpha(math.max(pressed * 0.55, hint, flash))
+        lane.beam:SetAlpha(math.max(pressed * 0.28, flash * 0.75))
+
+        if flash > 0 then
+            local size = PAD_SIZE * (1 + (1 - flash) * 0.9)
+            lane.burst:SetSize(size, size)
+            lane.burst:SetAlpha(flash * 0.65)
+        else
+            lane.burst:SetAlpha(0)
+        end
+
+        UpdatePopup(lane.popup, now)
+    end
+
+    for _, particle in ipairs(particles) do
+        if particle.bornAt then
+            local age = now - particle.bornAt
+            if age >= PARTICLE_SECONDS then
+                particle.bornAt = nil
+                particle.texture:Hide()
+            else
+                particle.texture:ClearAllPoints()
+                particle.texture:SetPoint("CENTER", highway, "BOTTOM",
+                    particle.x + particle.velocityX * age,
+                    HIT_Y + particle.velocityY * age - PARTICLE_GRAVITY / 2 * age * age)
+                particle.texture:SetAlpha(1 - age / PARTICLE_SECONDS)
+            end
+        end
+    end
+
+    UpdateFlash(missFlash, missFlashAt, MISS_FLASH_SECONDS, 0.45, now)
+    UpdatePopup(countdownPopup, now)
+    UpdatePopup(bannerPopup, now)
+    UpdatePopup(results.rankPopup, now)
+
+    -- Puls von Combo und Multiplikator klingt nach jedem Treffer ab
+    local pulse = comboPopup.pulseAt and math.max(0, 1 - (now - comboPopup.pulseAt) / 0.2) or 0
+    comboPopup.inner:SetScale(1 + 0.18 * pulse)
+    multiplierPopup.inner:SetScale(1 + 0.12 * pulse)
+
+    UpdateScoreDisplay(now, frameSeconds)
+end
+
+-- ---------------------------------------------------------------------------
+-- Spiellogik
+-- ---------------------------------------------------------------------------
+
+local function SetCombo(value)
+    combo = value
+    bestCombo = math.max(bestCombo, combo)
+
+    local newMultiplier = GetMultiplier(combo)
+    if newMultiplier ~= multiplier then
+        if newMultiplier > multiplier then
+            PlayPopup(bannerPopup, "x" .. newMultiplier .. " MULTIPLIKATOR!", HYPE_COLORS[newMultiplier])
+            PlaySoundFile(MULTIPLIER_SOUND, "SFX")
+        end
+        multiplier = newMultiplier
+        SetHype(multiplier)
+    elseif combo >= COMBO_MILESTONE * 2 and combo % COMBO_MILESTONE == 0 then
+        PlayPopup(bannerPopup, combo .. "er COMBO!", HYPE_COLORS[multiplier])
+    end
+    panelsDirty = true
+end
+
+local function RegisterMiss(note, popupKey, popupText)
+    note.judged = true
+    counts.miss = counts.miss + 1
+    judgedNotes = judgedNotes + 1
+    SetCombo(0)
+
+    if note.marker then
+        note.marker.body:SetVertexColor(0.3, 0.3, 0.34, 1)
+        note.marker.glow:SetVertexColor(0, 0, 0, 0)
+        note.marker.label:SetTextColor(0.65, 0.65, 0.7)
+    end
+    PlayPopup(laneViews[popupKey].popup, popupText, MISS_COLOR)
+    missFlashAt = GetTime()
+end
+
+local function RegisterHit(note, timing)
+    local timingError = math.abs(timing)
+    local judgementKey = timingError <= PERFECT_WINDOW and "perfect" or timingError <= GOOD_WINDOW and "good" or "ok"
+    local judgement = JUDGEMENTS[judgementKey]
+
+    note.judged = true
+    counts[judgementKey] = counts[judgementKey] + 1
+    judgedNotes = judgedNotes + 1
+    judgedWeight = judgedWeight + judgement.weight
+    timingSum = timingSum + timing
+    timingCount = timingCount + 1
+    SetCombo(combo + 1)
+
+    score = score + math.max(50, math.floor(100 * (1 - timingError / HIT_WINDOW))) * multiplier
+    if not targetReached and score >= targetScore then
+        targetReached = true
+        PlayPopup(bannerPopup, "ZIEL ERREICHT!", { 1, 0.84, 0.25 })
+        PlaySound(TARGET_REACHED_SOUND)
+    end
+
+    if note.marker then
+        ReleaseMarker(note.marker)
+    end
+
+    local lane = laneViews[note.key]
+    lane.flashAt = GetTime()
+    comboPopup.pulseAt = lane.flashAt
+    SpawnParticles(note.key, judgement.particles, LANE_COLORS[note.key])
+    local direction
+    if judgementKey ~= "perfect" then
+        direction = timing < 0 and "FRÜH" or "SPÄT"
+    end
+    PlayPopup(lane.popup, judgement.text, judgement.color, direction)
+end
+
+-- Sucht unter allen offenen Noten im Trefffenster die nächste mit passender Taste. Gibt es keine,
+-- kostet der Druck die nächstgelegene Note, damit wildes Drücken aller Tasten sich nicht lohnt.
+local function HandlePress(key)
+    if not active or not LANE_COLORS[key] then
+        return
+    end
+
+    local elapsed = GetTime() - startedAt
+    local matching
+    local matchingError = math.huge
+    local nearest
+    local nearestError = math.huge
+    for index = nextToExpire, #notes do
+        local note = notes[index]
+        local timing = elapsed - note.t
+        if timing < -HIT_WINDOW then
+            break
+        end
+
+        local timingError = math.abs(timing)
+        if not note.judged and timingError <= HIT_WINDOW then
+            if note.key == key and timingError < matchingError then
+                matching = note
+                matchingError = timingError
+            end
+            if timingError < nearestError then
+                nearest = note
+                nearestError = timingError
+            end
+        end
+    end
+
+    if matching then
+        RegisterHit(matching, elapsed - matching.t)
+    elseif nearest and nearestError <= WRONG_KEY_WINDOW then
+        RegisterMiss(nearest, key, "FALSCH")
+        PlayPopup(laneViews[nearest.key].popup, "MISS", MISS_COLOR)
+    end
+end
+
+local function GetAccuracy()
+    return #notes > 0 and judgedWeight / #notes or 0
+end
+
+local function ShowResults(taxSilver)
+    local accuracy = GetAccuracy()
+    local rank = RANKS[#RANKS]
+    for _, candidate in ipairs(RANKS) do
+        if accuracy >= candidate.accuracy then
+            rank = candidate
+            break
+        end
+    end
+
+    if score >= targetScore then
+        results.verdict:SetText("|cff73ff8cZIEL ERREICHT|r")
+        results.tax:SetText("Keine Steuern!")
+    else
+        results.verdict:SetText("|cffff4747ZIEL VERFEHLT|r")
+        results.tax:SetText("Steuern: " .. taxSilver .. " Silber")
+    end
+    PlayPopup(results.rankPopup, rank.rank, rank.color)
+
+    results.score:SetText(FormatNumber(score) .. " / " .. FormatNumber(targetScore))
+    local lines = {
+        string.format("Genauigkeit  %d%%", math.floor(accuracy * 100 + 0.5)),
+        "Beste Combo  " .. bestCombo,
+        string.format("|cff73ff8cPerfekt %d|r   |cffffe64dGut %d|r   |cffff9e40OK %d|r   |cffff4747Miss %d|r",
+            counts.perfect, counts.good, counts.ok, counts.miss),
+    }
+    if timingCount > 0 then
+        local meanTiming = timingSum / timingCount * 1000
+        table.insert(lines, string.format("Timing  im Schnitt %d ms %s",
+            math.floor(math.abs(meanTiming) + 0.5), meanTiming < 0 and "zu früh" or "zu spät"))
+    end
+    results.stats:SetText(table.concat(lines, "\n"))
+
+    local isFullCombo = counts.miss == 0 and #notes > 0
+    local isRecord = not previousRecord or score > previousRecord
+    local badges = {}
+    if isFullCombo then
+        table.insert(badges, "|cffffcc33FULL COMBO!|r")
+    end
+    if isRecord and score > 0 then
+        table.insert(badges, "|cff66d9ffNEUER REKORD!|r")
+        local records = GetRecords()
+        if records then
+            records[song.title] = score
+        end
+    elseif previousRecord then
+        table.insert(badges, "Rekord: " .. FormatNumber(previousRecord))
+    end
+    results.badges:SetText(table.concat(badges, "   "))
+    results.frame:Show()
 end
 
 local function StopGame(showResult)
@@ -151,49 +764,42 @@ local function StopGame(showResult)
     end
 
     active = false
-    sessionID = sessionID + 1
-    if ticker then
-        ticker:Cancel()
-        ticker = nil
+    if songSoundHandle then
+        StopSound(songSoundHandle)
+        songSoundHandle = nil
     end
-    if musicStarted then
-        if songSoundHandle then
-            StopSound(songSoundHandle)
-            songSoundHandle = nil
-        end
-    end
-    if musicVolumeBeforeGame ~= nil then
-        local originalVolume = musicVolumeBeforeGame
-        musicVolumeBeforeGame = nil
-        FadeBackgroundMusic(originalVolume)
-    end
+    RestoreBackgroundMusic()
     musicStarted = false
-    frame:SetPropagateKeyboardInput(true)
-    for _, marker in ipairs(activeMarkers) do
-        ReleaseMarker(marker)
+    pressedKeys = {}
+    SetKeyPropagation(true)
+    for index = #activeMarkers, 1, -1 do
+        ReleaseMarker(activeMarkers[index])
     end
-    activeMarkers = {}
+    HidePopup(countdownPopup)
 
     if showResult then
-        while nextMissCheckStep < stepCount do
-            local key = chart:sub(nextMissCheckStep + 1, nextMissCheckStep + 1)
-            if key ~= "-" and not judgedSteps[nextMissCheckStep] then
-                misses = misses + 1
+        for index = nextToExpire, #notes do
+            if not notes[index].judged then
+                notes[index].judged = true
+                counts.miss = counts.miss + 1
+                judgedNotes = judgedNotes + 1
             end
-            nextMissCheckStep = nextMissCheckStep + 1
         end
-        statusText:SetText("Song beendet | Treffer: " .. hits .. " | Verfehlt: " .. misses)
+        nextToExpire = #notes + 1
+        displayedScore = score
+        UpdatePanels()
         closeButton:SetText("Schließen")
-        UpdateScore()
-        print("|cff2674cc[L|cffff0000i|rDL Roulette]|r Guitar Hero: " .. song.title ..
-            " beendet. Score: " .. score .. " | Treffer: " .. hits .. " | Verfehlt: " .. misses)
-        local taxSilver = score < song.targetScore and addonTable:GetTaxSilver() or 0
+
+        local taxSilver = score < targetScore and addonTable:GetTaxSilver() or 0
+        ShowResults(taxSilver)
+        print("|cff2674cc[L|cffff0000i|rDL Roulette]|r WoW-Hero: " .. song.title ..
+            " beendet. Score: " .. score .. " | Treffer: " .. (#notes - counts.miss) .. " | Verfehlt: " .. counts.miss)
         addonTable:OnLocalTimerEvent(
             challengeID,
             "GUITARHEROFINISHED",
             score,
             song.title,
-            song.targetScore,
+            targetScore,
             taxSilver
         )
     else
@@ -201,154 +807,393 @@ local function StopGame(showResult)
     end
 end
 
-local function HandleKeyPress(key)
-    key = string.upper(key or "")
-    if not active or not musicStarted or not LANE_COLORS[key] then
-        return
-    end
-
-    local elapsed = GetTime() - startedAt - song.beatOffset
-    local stepIndex = math.floor(elapsed / stepDuration + 0.5)
-    local timingError = math.abs(elapsed - stepIndex * stepDuration)
-    if stepIndex < 0 or stepIndex >= stepCount or timingError > HIT_WINDOW then
-        return
-    end
-
-    local expectedKey = chart:sub(stepIndex + 1, stepIndex + 1)
-    if expectedKey == "-" or judgedSteps[stepIndex] then
-        return
-    end
-
-    judgedSteps[stepIndex] = true
-    RemoveMarkerForStep(stepIndex)
-    if key == expectedKey then
-        hits = hits + 1
-        combo = combo + 1
-        score = score + math.max(50, math.floor(100 * (1 - timingError / HIT_WINDOW)))
-        ShowLaneFeedback(expectedKey, true)
+local function StartMusic(now)
+    musicStarted = true
+    startedAt = now
+    local soundStarted
+    soundStarted, songSoundHandle = PlaySoundFile(song.music, "SFX")
+    if soundStarted then
+        MuteBackgroundMusic()
     else
-        misses = misses + 1
-        combo = 0
-        ShowLaneFeedback(key, false)
-        ShowLaneFeedback(expectedKey, false)
+        songSoundHandle = nil
+        print("|cffff0000[Lidl Roulette]|r Song konnte nicht abgespielt werden: " .. song.title)
     end
-    UpdateScore()
+    PlayPopup(countdownPopup, "LOS!", { 1, 0.84, 0.25 })
 end
 
-local function UpdateGame()
-    if not active then
-        return
+local function UpdateBeatLines(elapsed)
+    local firstBeat = math.ceil((elapsed - song.beatOffset - HIT_Y / NOTE_SPEED) / beatDuration)
+    for index, line in ipairs(beatLines) do
+        local beat = firstBeat + index - 1
+        local untilBeat = song.beatOffset + beat * beatDuration - elapsed
+        if untilBeat > NOTE_TRAVEL_SECONDS then
+            line:Hide()
+        else
+            line:ClearAllPoints()
+            line:SetPoint("CENTER", highway, "BOTTOM", 0, HIT_Y + untilBeat * NOTE_SPEED)
+            line:SetAlpha(beat % 4 == 0 and 0.32 or 0.12)
+            line:Show()
+        end
+    end
+end
+
+local function UpdateGame(now)
+    if not keyboardReady then
+        PrepareKeyboard()
     end
 
     if not musicStarted then
-        local remaining = COUNTDOWN_SECONDS - (GetTime() - countdownAt)
-        local countdown = math.ceil(remaining)
-        if countdown > 0 then
+        local remaining = startedAt - now
+        if remaining > 0 then
+            local countdown = math.ceil(remaining)
             if countdown ~= lastCountdownNumber then
                 lastCountdownNumber = countdown
-                statusText:SetText("Start in " .. countdown)
-            end
-            return
-        end
-
-        musicStarted = true
-        startedAt = GetTime()
-        local soundStarted
-        soundStarted, songSoundHandle = PlaySoundFile(song.music, "SFX")
-        if soundStarted then
-            musicVolumeBeforeGame = tonumber(GetCVar("Sound_MusicVolume"))
-            if musicVolumeBeforeGame ~= nil and musicVolumeBeforeGame > 0 then
-                FadeBackgroundMusic(0)
+                PlayPopup(countdownPopup, tostring(countdown), { 1, 1, 1 })
+                PlaySound(COUNTDOWN_SOUND)
             end
         else
-            songSoundHandle = nil
-            print("|cffff0000[Lidl Roulette]|r Song konnte nicht abgespielt werden: " .. song.title)
-        end
-        statusText:SetText("Drücke die Taste, wenn der fallende Marker W A S D erreicht")
-        return
-    end
-
-    local elapsed = GetTime() - startedAt
-    local stepIndex = math.floor((elapsed - song.beatOffset + HIT_WINDOW) / stepDuration)
-    if stepIndex >= 0 and stepIndex < stepCount and stepIndex ~= lastDisplayedStep then
-        lastDisplayedStep = stepIndex
-        local expectedKey = chart:sub(stepIndex + 1, stepIndex + 1)
-        for laneKey, label in pairs(laneLabels) do
-            local color = LANE_COLORS[laneKey]
-            local alpha = laneKey == expectedKey and expectedKey ~= "-" and 1 or 0.35
-            label:SetTextColor(color[1] * alpha, color[2] * alpha, color[3] * alpha)
-        end
-        UpdateScore()
-    end
-
-    local latestExpiredStep = math.floor((elapsed - song.beatOffset - HIT_WINDOW) / stepDuration)
-    while nextMissCheckStep <= latestExpiredStep and nextMissCheckStep < stepCount do
-        local key = chart:sub(nextMissCheckStep + 1, nextMissCheckStep + 1)
-        if key ~= "-" and not judgedSteps[nextMissCheckStep] then
-            misses = misses + 1
-            combo = 0
-            ShowLaneFeedback(key, false)
-        end
-        nextMissCheckStep = nextMissCheckStep + 1
-    end
-
-    local now = GetTime()
-    for key, expiresAt in pairs(laneFeedbackExpires) do
-        if now >= expiresAt then
-            laneFeedbackTexts[key]:Hide()
-            laneFeedbackExpires[key] = nil
+            StartMusic(now)
         end
     end
 
-    local generatedMarkers = 0
-    while nextVisualStep < stepCount and generatedMarkers < MAX_MARKERS do
-        local hitAt = song.beatOffset + nextVisualStep * stepDuration
-        local timeUntilHit = hitAt - elapsed
-        if timeUntilHit > NOTE_TRAVEL_SECONDS then
-            break
-        end
+    local elapsed = now - startedAt
 
-        local currentStep = nextVisualStep
-        nextVisualStep = nextVisualStep + 1
-        generatedMarkers = generatedMarkers + 1
-        local key = chart:sub(currentStep + 1, currentStep + 1)
-        if key ~= "-" and timeUntilHit >= -HIT_WINDOW then
-            local marker = AcquireMarker()
-            if marker then
-            marker.stepIndex = currentStep
-                marker.key = key
-                marker.hitAt = hitAt
-                marker.label:SetText(key)
-                local color = LANE_COLORS[key]
-                marker.label:SetTextColor(color[1], color[2], color[3])
-                table.insert(activeMarkers, marker)
-            end
+    while nextToSpawn <= #notes and notes[nextToSpawn].t - elapsed <= NOTE_TRAVEL_SECONDS do
+        local note = notes[nextToSpawn]
+        nextToSpawn = nextToSpawn + 1
+        if not note.judged and elapsed <= note.t + NOTE_TAIL_SECONDS then
+            AcquireMarker(note, now)
+        end
+    end
+
+    while nextToExpire <= #notes and elapsed > notes[nextToExpire].t + HIT_WINDOW do
+        local note = notes[nextToExpire]
+        nextToExpire = nextToExpire + 1
+        if not note.judged then
+            RegisterMiss(note, note.key, "MISS")
         end
     end
 
     for index = #activeMarkers, 1, -1 do
         local marker = activeMarkers[index]
-        local timeUntilHit = marker.hitAt - elapsed
-        if timeUntilHit < -HIT_WINDOW then
+        local untilHit = marker.note.t - elapsed
+        if untilHit < -NOTE_TAIL_SECONDS then
             ReleaseMarker(marker)
-            table.remove(activeMarkers, index)
         else
-            local progress = 1 - timeUntilHit / NOTE_TRAVEL_SECONDS
-            local y = LANE_HIT_Y + NOTE_FALL_DISTANCE * (1 - progress)
-            marker.label:ClearAllPoints()
-            marker.label:SetPoint("CENTER", frame, "BOTTOM", laneOffsets[marker.key], y)
+            marker.frame:ClearAllPoints()
+            marker.frame:SetPoint("CENTER", highway, "BOTTOM", laneViews[marker.note.key].x, HIT_Y + untilHit * NOTE_SPEED)
+            local alpha = math.min(1, (now - marker.spawnedAt) / NOTE_FADE_SECONDS)
+            marker.frame:SetAlpha(marker.note.judged and alpha * 0.55 or alpha)
         end
     end
 
-    local currentSecond = math.floor(elapsed)
-    if currentSecond ~= lastDisplayedSecond then
-        lastDisplayedSecond = currentSecond
-        timeText:SetText(string.format("%d:%02d", math.floor(currentSecond / 60), currentSecond % 60))
+    UpdateBeatLines(elapsed)
+
+    if multiplier >= 2 then
+        local phase = ((elapsed - song.beatOffset) / beatDuration) % 1
+        local alpha = (0.35 + 0.2 * (multiplier - 2)) * (0.65 + 0.35 * (1 - phase))
+        hypeLeft:SetAlpha(alpha)
+        hypeRight:SetAlpha(alpha)
+    else
+        hypeLeft:SetAlpha(0)
+        hypeRight:SetAlpha(0)
+    end
+
+    if panelsDirty then
+        UpdatePanels()
+    end
+
+    progressBar:SetWidth(math.max(1, PROGRESS_WIDTH * math.max(0, math.min(1, elapsed / song.duration))))
+    local remainingSeconds = math.max(0, math.ceil(song.duration - math.max(0, elapsed)))
+    if remainingSeconds ~= lastDisplayedSecond then
+        lastDisplayedSecond = remainingSeconds
+        timeText:SetText(string.format("%d:%02d", math.floor(remainingSeconds / 60), remainingSeconds % 60))
     end
 
     if elapsed >= song.duration then
         StopGame(true)
     end
+end
+
+-- ---------------------------------------------------------------------------
+-- Aufbau
+-- ---------------------------------------------------------------------------
+
+local function HandleKeyDown(key)
+    key = string.upper(key or "")
+    if not active or not LANE_COLORS[key] then
+        SetKeyPropagation(true)
+        return
+    end
+
+    SetKeyPropagation(false)
+    if not pressedKeys[key] then
+        pressedKeys[key] = true
+        HandlePress(key)
+    end
+end
+
+local function HandleKeyUp(key)
+    key = string.upper(key or "")
+    if LANE_COLORS[key] then
+        pressedKeys[key] = nil
+        SetKeyPropagation(true)
+    end
+end
+
+local function CreateLane(index, key, padLayer)
+    local color = LANE_COLORS[key]
+    local laneX = (index - 2.5) * LANE_WIDTH
+    local lane = { x = laneX }
+
+    local tint = CreateGradient(highway, "BACKGROUND", 1, "VERTICAL", color, 0.2, 0)
+    tint:SetPoint("BOTTOM", highway, "BOTTOM", laneX, 0)
+    tint:SetSize(LANE_WIDTH, HIGHWAY_HEIGHT)
+
+    if index > 1 then
+        local divider = CreateSolid(highway, "BACKGROUND", 2, 1, 1, 1, 0.08)
+        divider:SetPoint("BOTTOM", highway, "BOTTOM", laneX - LANE_WIDTH / 2, 0)
+        divider:SetSize(1, HIGHWAY_HEIGHT)
+    end
+
+    lane.beam = CreateGradient(highway, "ARTWORK", 0, "VERTICAL", color, 0.8, 0)
+    lane.beam:SetPoint("BOTTOM", highway, "BOTTOM", laneX, HIT_Y)
+    lane.beam:SetSize(LANE_WIDTH - 2, 300)
+    lane.beam:SetBlendMode("ADD")
+    lane.beam:SetAlpha(0)
+
+    -- Der Kreis ist auch per Maus bedienbar: Im Kampf gestartet gibt es anfangs keine Tastatur.
+    local pad = CreateFrame("Frame", nil, padLayer)
+    pad:SetSize(PAD_SIZE, PAD_SIZE)
+    pad:SetPoint("CENTER", highway, "BOTTOM", laneX, HIT_Y)
+    pad:EnableMouse(true)
+    pad:SetScript("OnMouseDown", function()
+        if active and not pressedKeys[key] then
+            pressedKeys[key] = true
+            HandlePress(key)
+        end
+    end)
+    pad:SetScript("OnMouseUp", function()
+        pressedKeys[key] = nil
+    end)
+
+    local rim = CreateCircle(pad, "ARTWORK", 0, PAD_SIZE)
+    rim:SetPoint("CENTER")
+    rim:SetVertexColor(color[1], color[2], color[3], 1)
+
+    local inner = CreateCircle(pad, "ARTWORK", 1, PAD_SIZE - 8)
+    inner:SetPoint("CENTER")
+    inner:SetVertexColor(0.04, 0.05, 0.08, 1)
+
+    lane.padFill = CreateCircle(pad, "ARTWORK", 2, PAD_SIZE - 8)
+    lane.padFill:SetPoint("CENTER")
+    lane.padFill:SetVertexColor(color[1], color[2], color[3], 1)
+    lane.padFill:SetAlpha(0)
+
+    local label = CreateText(pad, 24)
+    label:SetPoint("CENTER")
+    label:SetText(key)
+    label:SetTextColor(color[1], color[2], color[3])
+
+    lane.burst = CreateCircle(fxLayer, "ARTWORK", 0, PAD_SIZE)
+    lane.burst:SetPoint("CENTER", highway, "BOTTOM", laneX, HIT_Y)
+    lane.burst:SetVertexColor(color[1], color[2], color[3], 1)
+    lane.burst:SetBlendMode("ADD")
+    lane.burst:SetAlpha(0)
+
+    lane.popup = CreatePopup(fxLayer, 16, highway, laneX, HIT_Y + 62, 0.6, 28)
+    laneViews[key] = lane
+end
+
+local function CreateHighway()
+    highway = CreateFrame("Frame", nil, frame)
+    highway:SetSize(HIGHWAY_WIDTH, HIGHWAY_HEIGHT)
+    highway:SetPoint("BOTTOM", frame, "BOTTOM", 0, 14)
+    highway:SetClipsChildren(true)
+
+    local baseLevel = frame:GetFrameLevel()
+    highway:SetFrameLevel(baseLevel + 1)
+
+    local background = CreateGradient(highway, "BACKGROUND", 0, "VERTICAL", { 0.07, 0.08, 0.13 }, 1, 0.82)
+    background:SetAllPoints()
+
+    for index = 1, BEAT_LINE_COUNT do
+        local line = CreateSolid(highway, "BACKGROUND", 3, 1, 1, 1, 1)
+        line:SetSize(HIGHWAY_WIDTH, 2)
+        line:Hide()
+        beatLines[index] = line
+    end
+
+    hypeLeft = highway:CreateTexture(nil, "BACKGROUND", nil, 4)
+    hypeLeft:SetTexture(WHITE)
+    hypeLeft:SetPoint("TOPLEFT")
+    hypeLeft:SetPoint("BOTTOMLEFT")
+    hypeLeft:SetWidth(46)
+    hypeLeft:SetBlendMode("ADD")
+    hypeRight = highway:CreateTexture(nil, "BACKGROUND", nil, 4)
+    hypeRight:SetTexture(WHITE)
+    hypeRight:SetPoint("TOPRIGHT")
+    hypeRight:SetPoint("BOTTOMRIGHT")
+    hypeRight:SetWidth(46)
+    hypeRight:SetBlendMode("ADD")
+
+    local hitLine = CreateSolid(highway, "ARTWORK", 1, 1, 1, 1, 0.35)
+    hitLine:SetPoint("CENTER", highway, "BOTTOM", 0, HIT_Y)
+    hitLine:SetSize(HIGHWAY_WIDTH, 2)
+
+    missFlash = CreateGradient(highway, "ARTWORK", 2, "VERTICAL", MISS_COLOR, 0.9, 0)
+    missFlash:SetPoint("BOTTOMLEFT")
+    missFlash:SetPoint("BOTTOMRIGHT")
+    missFlash:SetHeight(170)
+    missFlash:SetAlpha(0)
+
+    -- Ebenen: Combo im Hintergrund < Kreise < Noten < Effekte
+    local comboLayer = CreateFrame("Frame", nil, highway)
+    comboLayer:SetAllPoints()
+    comboLayer:SetFrameLevel(baseLevel + 2)
+    comboPopup = CreatePopup(comboLayer, 72, highway, 0, 330, 1)
+    comboPopup.text:SetTextColor(1, 1, 1)
+    comboPopup.holder:SetAlpha(0.13)
+
+    local padLayer = CreateFrame("Frame", nil, highway)
+    padLayer:SetAllPoints()
+    padLayer:SetFrameLevel(baseLevel + 3)
+
+    noteLayer = CreateFrame("Frame", nil, highway)
+    noteLayer:SetAllPoints()
+    noteLayer:SetFrameLevel(baseLevel + 4)
+
+    fxLayer = CreateFrame("Frame", nil, highway)
+    fxLayer:SetAllPoints()
+    fxLayer:SetFrameLevel(baseLevel + 30)
+
+    for index, key in ipairs(LANE_KEYS) do
+        CreateLane(index, key, padLayer)
+    end
+
+    for index = 1, PARTICLE_COUNT do
+        local texture = CreateSolid(fxLayer, "OVERLAY", 0, 1, 1, 1, 1)
+        texture:SetSize(5, 5)
+        texture:SetColorTexture(1, 1, 1, 1)
+        texture:SetBlendMode("ADD")
+        texture:Hide()
+        particles[index] = { texture = texture }
+    end
+
+    countdownPopup = CreatePopup(fxLayer, 96, highway, 0, 340, 0.95)
+    bannerPopup = CreatePopup(fxLayer, 28, highway, 0, 430, 1.2, 30)
+end
+
+local function CreateBar(parent, width, height)
+    local background = CreateSolid(parent, "ARTWORK", 0, 1, 1, 1, 0.1)
+    background:SetSize(width, height)
+    local fill = CreateSolid(parent, "ARTWORK", 1, 1, 1, 1, 1)
+    fill:SetPoint("LEFT", background, "LEFT", 0, 0)
+    fill:SetHeight(height)
+    fill:SetWidth(1)
+    return background, fill
+end
+
+local function CreateMultiplierPanel()
+    local label = CreateText(frame, 12)
+    label:SetPoint("TOPLEFT", frame, "TOPLEFT", 16, -108)
+    label:SetWidth(PANEL_WIDTH)
+    label:SetJustifyH("CENTER")
+    label:SetText("MULTIPLIKATOR")
+    label:SetTextColor(0.7, 0.74, 0.82)
+
+    local anchor = CreateFrame("Frame", nil, frame)
+    anchor:SetSize(PANEL_WIDTH, 80)
+    anchor:SetPoint("TOP", label, "BOTTOM", 0, -6)
+    multiplierPopup = CreatePopup(frame, 62, anchor, 0, 40, 1)
+
+    local barBackground
+    barBackground, multiplierBar = CreateBar(frame, BAR_WIDTH, 8)
+    barBackground:SetPoint("TOP", anchor, "BOTTOM", 0, -4)
+
+    local comboLabel = CreateText(frame, 12)
+    comboLabel:SetPoint("TOP", barBackground, "BOTTOM", 0, -26)
+    comboLabel:SetText("COMBO")
+    comboLabel:SetTextColor(0.7, 0.74, 0.82)
+
+    comboText = CreateText(frame, 40)
+    comboText:SetPoint("TOP", comboLabel, "BOTTOM", 0, -4)
+
+    bestComboText = CreateText(frame, 12)
+    bestComboText:SetPoint("TOP", comboText, "BOTTOM", 0, -6)
+    bestComboText:SetTextColor(0.7, 0.74, 0.82)
+
+    hintText = CreateText(frame, 12)
+    hintText:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 16, 16)
+    hintText:SetWidth(PANEL_WIDTH)
+    hintText:SetJustifyH("CENTER")
+    hintText:SetTextColor(0.7, 0.74, 0.82)
+end
+
+local function CreateScorePanel()
+    local label = CreateText(frame, 12)
+    label:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -16, -108)
+    label:SetWidth(PANEL_WIDTH)
+    label:SetJustifyH("CENTER")
+    label:SetText("SCORE")
+    label:SetTextColor(0.7, 0.74, 0.82)
+
+    scoreText = CreateText(frame, 30)
+    scoreText:SetPoint("TOP", label, "BOTTOM", 0, -6)
+
+    recordText = CreateText(frame, 12)
+    recordText:SetPoint("TOP", scoreText, "BOTTOM", 0, -6)
+    recordText:SetTextColor(0.7, 0.74, 0.82)
+
+    targetLabel = CreateText(frame, 12)
+    targetLabel:SetPoint("TOP", recordText, "BOTTOM", 0, -24)
+
+    local barBackground
+    barBackground, targetBar = CreateBar(frame, BAR_WIDTH, 14)
+    barBackground:SetPoint("TOP", targetLabel, "BOTTOM", 0, -6)
+
+    accuracyText = CreateText(frame, 12)
+    accuracyText:SetPoint("TOP", barBackground, "BOTTOM", 0, -24)
+
+    countersText = CreateText(frame, 14)
+    countersText:SetPoint("TOP", accuracyText, "BOTTOM", 0, -14)
+    countersText:SetJustifyH("CENTER")
+    countersText:SetSpacing(5)
+end
+
+local function CreateResults()
+    results = {}
+    results.frame = CreateFrame("Frame", nil, frame)
+    results.frame:SetAllPoints(highway)
+    results.frame:SetFrameLevel(frame:GetFrameLevel() + 60)
+
+    local background = CreateSolid(results.frame, "BACKGROUND", 0, 0.03, 0.035, 0.06, 0.94)
+    background:SetAllPoints()
+
+    results.verdict = CreateText(results.frame, 28)
+    results.verdict:SetPoint("TOP", results.frame, "TOP", 0, -34)
+
+    results.tax = CreateText(results.frame, 15)
+    results.tax:SetPoint("TOP", results.verdict, "BOTTOM", 0, -8)
+    results.tax:SetTextColor(0.9, 0.9, 0.9)
+
+    results.rankPopup = CreatePopup(results.frame, 120, results.frame, 0, 370, 1e9)
+
+    results.score = CreateText(results.frame, 22)
+    results.score:SetPoint("TOP", results.frame, "TOP", 0, -290)
+
+    results.stats = CreateText(results.frame, 14)
+    results.stats:SetPoint("TOP", results.score, "BOTTOM", 0, -18)
+    results.stats:SetWidth(HIGHWAY_WIDTH - 20)
+    results.stats:SetJustifyH("CENTER")
+    results.stats:SetSpacing(7)
+
+    results.badges = CreateText(results.frame, 16)
+    results.badges:SetPoint("BOTTOM", results.frame, "BOTTOM", 0, 34)
+    results.badges:SetWidth(HIGHWAY_WIDTH - 20)
+    results.badges:SetJustifyH("CENTER")
+
+    results.frame:Hide()
 end
 
 local function Initialize()
@@ -357,58 +1202,47 @@ local function Initialize()
     end
 
     frame = CreateFrame("Frame", "LidlRouletteGuitarHeroFrame", UIParent, "BackdropTemplate")
-    frame:SetSize(560, 420)
+    frame:SetSize(FRAME_WIDTH, FRAME_HEIGHT)
     frame:SetPoint("CENTER")
     frame:SetFrameStrata("DIALOG")
     frame:SetClampedToScreen(true)
+    local scale = math.min(1, (UIParent:GetWidth() - 40) / FRAME_WIDTH, (UIParent:GetHeight() - 40) / FRAME_HEIGHT)
+    frame:SetScale(math.max(0.5, scale))
     frame:EnableMouse(true)
-    frame:EnableKeyboard(true)
-    frame:SetPropagateKeyboardInput(true)
-    frame:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 2 })
-    frame:SetBackdropColor(0.035, 0.04, 0.055, 0.98)
-    frame:SetBackdropBorderColor(0.72, 0.75, 0.8, 1)
+    frame:SetMovable(true)
+    frame:RegisterForDrag("LeftButton")
+    frame:SetScript("OnDragStart", frame.StartMoving)
+    frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
+    frame:SetBackdrop({ bgFile = WHITE, edgeFile = WHITE, edgeSize = 2 })
+    frame:SetBackdropColor(0.03, 0.035, 0.06, 0.98)
 
-    songText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    songText:SetPoint("TOP", frame, "TOP", 0, -16)
-    songText:SetWidth(520)
+    songText = CreateText(frame, 20)
+    songText:SetPoint("TOP", frame, "TOP", 0, -14)
+    songText:SetWidth(FRAME_WIDTH - 160)
     songText:SetJustifyH("CENTER")
-    songText:SetFont("Fonts\\FRIZQT__.TTF", 22, "OUTLINE")
+    songText:SetWordWrap(false)
 
-    scoreText = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightLarge")
-    scoreText:SetPoint("TOPLEFT", frame, "TOPLEFT", 22, -50)
-    scoreText:SetFont("Fonts\\FRIZQT__.TTF", 15, "OUTLINE")
+    difficultyText = CreateText(frame, 12)
+    difficultyText:SetPoint("TOP", songText, "BOTTOM", 0, -6)
 
-    timeText = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-    timeText:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -22, -52)
-    timeText:SetFont("Fonts\\FRIZQT__.TTF", 14, "OUTLINE")
+    timeText = CreateText(frame, 16)
+    timeText:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -30, -38)
 
-    statusText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    statusText:SetPoint("TOP", frame, "TOP", 0, -72)
-    statusText:SetWidth(520)
-    statusText:SetJustifyH("CENTER")
-    statusText:SetFont("Fonts\\FRIZQT__.TTF", 16, "OUTLINE")
+    local progressBackground
+    progressBackground, progressBar = CreateBar(frame, PROGRESS_WIDTH, 4)
+    progressBackground:SetPoint("TOP", frame, "TOP", 0, -72)
+    progressBar:SetColorTexture(0.85, 0.88, 0.95, 1)
 
-    for index, key in ipairs(LANE_KEYS) do
-        local label = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-        local laneOffset = (index - 2.5) * 112
-        label:SetPoint("CENTER", frame, "BOTTOM", laneOffset, LANE_HIT_Y)
-        label:SetFont("Fonts\\FRIZQT__.TTF", 32, "OUTLINE")
-        label:SetText(key)
-        local color = LANE_COLORS[key]
-        label:SetTextColor(color[1], color[2], color[3], 0.35)
-        laneLabels[key] = label
-        laneOffsets[key] = laneOffset
-
-        local feedbackText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-        feedbackText:SetPoint("BOTTOM", label, "TOP", 0, 5)
-        feedbackText:SetFont("Fonts\\FRIZQT__.TTF", 11, "OUTLINE")
-        feedbackText:Hide()
-        laneFeedbackTexts[key] = feedbackText
-    end
+    CreateHighway()
+    CreateMultiplierPanel()
+    CreateScorePanel()
+    CreateResults()
+    SetHype(1)
 
     closeButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
     closeButton:SetSize(110, 24)
-    closeButton:SetPoint("BOTTOM", frame, "BOTTOM", 0, 12)
+    closeButton:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -50, 16)
+    closeButton:SetFrameLevel(frame:GetFrameLevel() + 70)
     closeButton:SetScript("OnClick", function()
         if active then
             StopGame(false)
@@ -418,9 +1252,75 @@ local function Initialize()
     end)
 
     frame:SetScript("OnKeyDown", function(_, key)
-        HandleKeyPress(key)
+        HandleKeyDown(key)
     end)
+    frame:SetScript("OnKeyUp", function(_, key)
+        HandleKeyUp(key)
+    end)
+    frame:SetScript("OnUpdate", function(_, frameSeconds)
+        local now = GetTime()
+        if active then
+            UpdateGame(now)
+        end
+        UpdateEffects(now, frameSeconds)
+    end)
+
+    frame:RegisterEvent("PLAYER_REGEN_DISABLED")
+    frame:RegisterEvent("PLAYER_LOGOUT")
+    frame:SetScript("OnEvent", function(_, event)
+        if event == "PLAYER_REGEN_DISABLED" then
+            -- Letzte Gelegenheit vor der Kampfsperre: Sonst könnte eine gerade gehaltene
+            -- Taste die Weitergabe für den ganzen Kampf ausgeschaltet lassen.
+            if keyboardReady then
+                frame:SetPropagateKeyboardInput(true)
+            end
+        elseif event == "PLAYER_LOGOUT" then
+            -- Bei /reload oder Logout mitten im Song darf die Musik nicht stumm bleiben.
+            local volume = musicVolumeBeforeGame or musicVolumeRestoring
+            if volume ~= nil then
+                SetCVar("Sound_MusicVolume", string.format("%.3f", volume))
+            end
+        end
+    end)
+
     frame:Hide()
+end
+
+local function ResetRound()
+    nextToSpawn = 1
+    nextToExpire = 1
+    lastCountdownNumber = nil
+    lastDisplayedSecond = nil
+    lastShownScore = nil
+    pressedKeys = {}
+    counts = { perfect = 0, good = 0, ok = 0, miss = 0 }
+    score = 0
+    displayedScore = 0
+    combo = 0
+    bestCombo = 0
+    multiplier = 1
+    timingSum = 0
+    timingCount = 0
+    judgedWeight = 0
+    judgedNotes = 0
+    targetReached = false
+    musicStarted = false
+
+    results.frame:Hide()
+    HidePopup(results.rankPopup)
+    HidePopup(bannerPopup)
+    HidePopup(countdownPopup)
+    missFlashAt = nil
+    for _, particle in ipairs(particles) do
+        particle.bornAt = nil
+        particle.texture:Hide()
+    end
+    for _, lane in pairs(laneViews) do
+        lane.flashAt = nil
+        HidePopup(lane.popup)
+    end
+    SetHype(1)
+    targetBar:SetColorTexture(0.35, 0.75, 1, 1)
 end
 
 function GuitarHeroUi:Start(challengeIDArg)
@@ -428,7 +1328,7 @@ function GuitarHeroUi:Start(challengeIDArg)
     local challenge = addonTable.Roulette.GetChallenge(challengeIDArg)
     local requiredDifficulty = challenge and challenge.guitarHeroDifficulty
     if requiredDifficulty ~= "easy" and requiredDifficulty ~= "medium" and requiredDifficulty ~= "hard" then
-        print("|cffff0000[Lidl Roulette]|r Guitar Hero hat keine gültige Schwierigkeitsstufe.")
+        print("|cffff0000[Lidl Roulette]|r WoW-Hero hat keine gültige Schwierigkeitsstufe.")
         return
     end
 
@@ -444,14 +1344,14 @@ function GuitarHeroUi:Start(challengeIDArg)
             and type(candidate.targetScore) == "number" and candidate.targetScore > 0
             and type(candidate.music) == "string" and candidate.music ~= "" then
             local candidateChart = candidate.chart:gsub("%s", ""):upper()
-            if candidateChart:match("^[WASD%-]+$") then
+            if candidateChart:match("^[WASD%-]+$") and candidateChart:match("[WASD]") then
                 table.insert(validSongs, { song = candidate, chart = candidateChart })
             end
         end
     end
 
     if #validSongs == 0 then
-        print("|cffff0000[Lidl Roulette]|r Guitar Hero hat keinen gültigen Song konfiguriert.")
+        print("|cffff0000[Lidl Roulette]|r WoW-Hero hat keinen gültigen Song konfiguriert.")
         return
     end
 
@@ -459,50 +1359,42 @@ function GuitarHeroUi:Start(challengeIDArg)
     if active then
         StopGame(false)
     end
+    PrepareKeyboard()
 
     local selected = validSongs[math.random(#validSongs)]
     song = selected.song
     challengeID = challengeIDArg
-    chart = selected.chart
-    stepDuration = 60 / song.bpm / song.stepsPerBeat
-    stepCount = math.min(#chart, math.floor((song.duration - song.beatOffset) / stepDuration) + 1)
-    nextVisualStep = 0
-    nextMissCheckStep = 0
-    activeMarkers = {}
-    countdownAt = GetTime()
-    lastCountdownNumber = COUNTDOWN_SECONDS
-    lastDisplayedStep = -1
-    judgedSteps = {}
-    laneFeedbackExpires = {}
-    for _, feedbackText in pairs(laneFeedbackTexts) do
-        feedbackText:Hide()
+    beatDuration = 60 / song.bpm
+
+    local stepDuration = beatDuration / song.stepsPerBeat
+    local stepCount = math.min(#selected.chart, math.floor((song.duration - song.beatOffset) / stepDuration) + 1)
+    notes = {}
+    for step = 0, stepCount - 1 do
+        local key = selected.chart:sub(step + 1, step + 1)
+        if key ~= "-" then
+            table.insert(notes, { key = key, t = song.beatOffset + step * stepDuration })
+        end
     end
-    lastDisplayedSecond = -1
-    score = 0
-    hits = 0
-    misses = 0
-    combo = 0
-    musicStarted = false
+
+    targetScore = ComputeTargetScore(#notes, song.targetScore)
+    local records = GetRecords()
+    previousRecord = records and records[song.title]
+
+    ResetRound()
+    startedAt = GetTime() + COUNTDOWN_SECONDS
     active = true
-    sessionID = sessionID + 1
 
     songText:SetText(song.title)
-    statusText:SetText("Start in " .. COUNTDOWN_SECONDS)
-    timeText:SetText("0:00")
+    difficultyText:SetText("WoW-Hero  |  " .. (DIFFICULTY_LABELS[song.difficulty] or string.upper(song.difficulty)))
+    targetLabel:SetText("ZIEL  " .. FormatNumber(targetScore))
+    recordText:SetText(previousRecord and ("REKORD  " .. FormatNumber(previousRecord)) or "NOCH KEIN REKORD")
     closeButton:SetText("Abbrechen")
-    UpdateScore()
-    for key, label in pairs(laneLabels) do
-        local color = LANE_COLORS[key]
-        label:SetTextColor(color[1], color[2], color[3], 0.35)
+    if not keyboardReady then
+        hintText:SetText("Im Kampf gestartet:\nKreise anklicken, die Tasten\ngehen nach dem Kampf.")
     end
+    progressBar:SetWidth(1)
+    UpdatePanels()
 
-    frame:SetPropagateKeyboardInput(true)
     frame:Show()
     frame:Raise()
-    local currentSession = sessionID
-    ticker = C_Timer.NewTicker(TICK_SECONDS, function()
-        if currentSession == sessionID then
-            UpdateGame()
-        end
-    end)
 end
