@@ -37,7 +37,7 @@ local MISS_COLOR = { 1, 0.28, 0.28 }
 -- dass ohne Multiplikator genau targetScore herauskäme, und die Fehler in kleinen Gruppen verteilt.
 local REFERENCE_POINTS = 75
 local REFERENCE_MISS_CLUSTER = 4
-local TARGET_DIFFICULTY = 1.2   -- hebt das Ziel aller Songs an; 1 = reine Referenzrunde
+local TARGET_DIFFICULTY = 2.1     -- hebt das Ziel aller Songs an; 1 = reine Referenzrunde
 
 -- Layout
 local LANE_KEYS = { "W", "A", "S", "D" }
@@ -64,7 +64,12 @@ local PAD_SIZE = 70
 local PANEL_WIDTH = 178
 local PROGRESS_WIDTH = 720
 local BAR_WIDTH = 170
-local FONT = "Fonts\\FRIZQT__.TTF"
+-- Die Spielwelt bleibt durchscheinend sichtbar: Sieht man nur die Ränder sich bewegen, während
+-- die Bildmitte stillsteht, kann das Motion Sickness auslösen.
+local FRAME_ALPHA = 0.45
+local HIGHWAY_ALPHA_BOTTOM = 0.6
+local HIGHWAY_ALPHA_TOP = 0.4
+local FONT ="Fonts\\FRIZQT__.TTF"
 local WHITE = "Interface\\Buttons\\WHITE8X8"
 local CIRCLE_MASK = "Interface\\CHARACTERFRAME\\TempPortraitAlphaMask"
 local MULTIPLIER_SOUND = "Interface\\AddOns\\LidlRoulette\\src\\Media\\Sounds\\OSU\\OsuHitSound.ogg"
@@ -85,6 +90,7 @@ local PARTICLE_COUNT = 48
 local PARTICLE_SECONDS = 0.45
 local PARTICLE_GRAVITY = 900
 local FLASH_SECONDS = 0.28
+local PRESS_FLASH_SECONDS = 0.16
 local MISS_FLASH_SECONDS = 0.3
 local SCORE_ROLL_SPEED = 12     -- Anteil der Differenz pro Sekunde
 
@@ -145,7 +151,6 @@ local beatDuration
 local startedAt
 local lastCountdownNumber
 local lastDisplayedSecond
-local pressedKeys = {}
 local counts = {}
 local score = 0
 local displayedScore = 0
@@ -272,10 +277,18 @@ local function PrepareKeyboard()
     if keyboardReady or InCombatLockdown() then
         return
     end
-    frame:SetPropagateKeyboardInput(true)
     frame:EnableKeyboard(true)
+    frame:SetPropagateKeyboardInput(true)
     keyboardReady = true
     hintText:SetText("Taste drücken, wenn die Note den Kreis erreicht.")
+end
+
+-- Bei jedem Tastendruck erneut setzen: Der Wert wirkt erst dadurch verlässlich auf genau diese
+-- Taste. Im Kampf ist der Aufruf gesperrt, dort gilt der zuletzt gesetzte Wert weiter.
+local function KeepKeysPropagating()
+    if keyboardReady and not InCombatLockdown() then
+        frame:SetPropagateKeyboardInput(true)
+    end
 end
 
 -- ---------------------------------------------------------------------------
@@ -532,7 +545,7 @@ end
 local function UpdateEffects(now, frameSeconds)
     for _, key in ipairs(LANE_KEYS) do
         local lane = laneViews[key]
-        local pressed = pressedKeys[key] and 1 or 0
+        local pressed = lane.pressedAt and math.max(0, 1 - (now - lane.pressedAt) / PRESS_FLASH_SECONDS) or 0
         local hint = 0
         for _, marker in ipairs(activeMarkers) do
             local note = marker.note
@@ -665,6 +678,7 @@ local function HandlePress(key)
         return
     end
 
+    laneViews[key].pressedAt = GetTime()
     local elapsed = GetTime() - startedAt
     local matching
     local matchingError = math.huge
@@ -766,7 +780,6 @@ local function StopGame(showResult)
     end
     RestoreBackgroundMusic()
     musicStarted = false
-    pressedKeys = {}
     for index = #activeMarkers, 1, -1 do
         ReleaseMarker(activeMarkers[index])
     end
@@ -914,23 +927,11 @@ end
 -- Aufbau
 -- ---------------------------------------------------------------------------
 
+-- Kein Merken gedrückter Tasten: Weil die Tasten ans Spiel weitergehen, kommt das Loslassen hier
+-- nicht verlässlich an. Eine darauf wartende Taste bliebe sonst dauerhaft gesperrt.
 local function HandleKeyDown(key)
-    key = string.upper(key or "")
-    if not active or not LANE_COLORS[key] then
-        return
-    end
-
-    if not pressedKeys[key] then
-        pressedKeys[key] = true
-        HandlePress(key)
-    end
-end
-
-local function HandleKeyUp(key)
-    key = string.upper(key or "")
-    if LANE_COLORS[key] then
-        pressedKeys[key] = nil
-    end
+    KeepKeysPropagating()
+    HandlePress(string.upper(key or ""))
 end
 
 local function CreateLane(index, key, padLayer)
@@ -960,13 +961,7 @@ local function CreateLane(index, key, padLayer)
     pad:SetPoint("CENTER", highway, "BOTTOM", laneX, HIT_Y)
     pad:EnableMouse(true)
     pad:SetScript("OnMouseDown", function()
-        if active and not pressedKeys[key] then
-            pressedKeys[key] = true
-            HandlePress(key)
-        end
-    end)
-    pad:SetScript("OnMouseUp", function()
-        pressedKeys[key] = nil
+        HandlePress(key)
     end)
 
     local rim = CreateCircle(pad, "ARTWORK", 0, PAD_SIZE)
@@ -1006,7 +1001,7 @@ local function CreateHighway()
     local baseLevel = frame:GetFrameLevel()
     highway:SetFrameLevel(baseLevel + 1)
 
-    local background = CreateGradient(highway, "BACKGROUND", 0, "VERTICAL", { 0.07, 0.08, 0.13 }, 1, 0.82)
+    local background = CreateGradient(highway, "BACKGROUND", 0, "VERTICAL", { 0.07, 0.08, 0.13 }, HIGHWAY_ALPHA_BOTTOM, HIGHWAY_ALPHA_TOP)
     background:SetAllPoints()
 
     for index = 1, BEAT_LINE_COUNT do
@@ -1206,7 +1201,7 @@ local function Initialize()
     frame:SetScript("OnDragStart", frame.StartMoving)
     frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
     frame:SetBackdrop({ bgFile = WHITE, edgeFile = WHITE, edgeSize = 2 })
-    frame:SetBackdropColor(0.03, 0.035, 0.06, 0.98)
+    frame:SetBackdropColor(0.03, 0.035, 0.06, FRAME_ALPHA)
 
     songText = CreateText(frame, 20)
     songText:SetPoint("TOP", frame, "TOP", 0, -14)
@@ -1246,9 +1241,6 @@ local function Initialize()
     frame:SetScript("OnKeyDown", function(_, key)
         HandleKeyDown(key)
     end)
-    frame:SetScript("OnKeyUp", function(_, key)
-        HandleKeyUp(key)
-    end)
     frame:SetScript("OnUpdate", function(_, frameSeconds)
         local now = GetTime()
         if active then
@@ -1275,8 +1267,7 @@ local function ResetRound()
     lastCountdownNumber = nil
     lastDisplayedSecond = nil
     lastShownScore = nil
-    pressedKeys = {}
-    counts = { perfect = 0, good = 0, ok = 0, miss = 0 }
+    counts ={ perfect = 0, good = 0, ok = 0, miss = 0 }
     score = 0
     displayedScore = 0
     combo = 0
@@ -1300,6 +1291,7 @@ local function ResetRound()
     end
     for _, lane in pairs(laneViews) do
         lane.flashAt = nil
+        lane.pressedAt = nil
         HidePopup(lane.popup)
     end
     SetHype(1)
@@ -1380,4 +1372,5 @@ function GuitarHeroUi:Start(challengeIDArg)
 
     frame:Show()
     frame:Raise()
+    KeepKeysPropagating()
 end
