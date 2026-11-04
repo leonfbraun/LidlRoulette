@@ -95,6 +95,18 @@ function Roulette.GetRarityColor(rarity)
     return colors[rarity] or { 1, 1, 1 } 
 end
 
+function Roulette.GetRaritySound(rarity)
+    local sounds = {
+        Common = SOUNDKIT.IG_QUEST_LIST_COMPLETE,
+        Uncommon = SOUNDKIT.LFG_REWARDS,
+        Rare = SOUNDKIT.UI_WORLDQUEST_COMPLETE,
+        Epic = SOUNDKIT.UI_EPICLOOT_TOAST,
+        Legendary = SOUNDKIT.UI_LEGENDARY_LOOT_TOAST,
+    }
+
+    return sounds[rarity] or sounds.Common
+end
+
 function Roulette.GetRarityColorHexCode(rarity)
     local colors = {
         Common = { 1, 1, 1 },
