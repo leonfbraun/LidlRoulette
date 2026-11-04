@@ -65,18 +65,6 @@ addonTable.OsuSongs = {
         targetPercent = 0.34,
     },
     {
-        title = "1, 2 Oatmeal",
-        music = "Interface\\AddOns\\LidlRoulette\\src\\Media\\Sounds\\GuitarHero\\Oatmeal.ogg",
-        chartSourceTitle = "1, 2 Oatmeal",
-        bpm = 124.5,
-        duration = 132,
-        beatOffset = 0,
-        timingOffset = 0,
-        stepsPerBeat = 2,
-        difficulty = "hard",
-        targetPercent = 0.24,
-    },
-    {
         title = "Kiryu - Bakamitai",
         music = "Interface\\AddOns\\LidlRoulette\\src\\Media\\Sounds\\GuitarHero\\Bakamitai.ogg",
         chartSourceTitle = "Kiryu - Bakamitai",
