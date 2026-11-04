@@ -22,7 +22,11 @@ local function BuildRarityPools(reason)
         local clankerChallengeAllowed =
             not HasTag(challenge, "Clanker")
             or LidlRouletteDB.settings.areClankerChallengesEnabled
+        local musicChallengeAllowed =
+            not HasTag(challenge, "Musik")
+            or LidlRouletteDB.settings.areMusicChallengesEnabled
         if clankerChallengeAllowed
+            and musicChallengeAllowed
             and not ((reason == "death" or reason == "duel") and HasTag(challenge, "Positiv")) then
             local rarity = challenge.rarity
             challengePools[rarity] = challengePools[rarity] or {}

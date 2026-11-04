@@ -55,13 +55,34 @@ local function CreateEnableClankerChallengesCheckbox()
     SettingsUi.enableClankerChallengesCheckbox = checkbox
 end
 
+local function CreateEnableMusicChallengesCheckbox()
+    local checkbox = CreateFrame("CheckButton", nil, SettingsUi.panel, "UICheckButtonTemplate")
+    checkbox:SetPoint("TOPLEFT", SettingsUi.panel, "TOPLEFT", 16, -152)
+    checkbox:SetChecked(LidlRouletteDB.settings.areMusicChallengesEnabled)
+
+    local label = checkbox:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    label:SetPoint("LEFT", checkbox, "RIGHT", 4, 0)
+    label:SetText("Musik-Challenges erlauben")
+
+    checkbox:SetScript("OnClick", function(self)
+        local isChecked = self:GetChecked()
+        LidlRouletteDB.settings.areMusicChallengesEnabled = isChecked
+        print("|cff2674cc[L|cffff0000i|rDL Roulette]|r Musik-Challenges " .. (isChecked and "aktiviert" or "deaktiviert"))
+    end)
+
+    table.insert(SettingsUi.panel.checkboxes, checkbox)
+    SettingsUi.enableMusicChallengesCheckbox = checkbox
+end
+
 CreatePanelHeading()
 CreateEnableRouletteCheckbox()
 CreateEnableClankerChallengesCheckbox()
+CreateEnableMusicChallengesCheckbox()
 
 SettingsUi.panel:SetScript("OnShow", function()
     SettingsUi.enableRouletteCheckbox:SetChecked(LidlRouletteDB.settings.isRouletteEnabled)
     SettingsUi.enableClankerChallengesCheckbox:SetChecked(LidlRouletteDB.settings.areClankerChallengesEnabled)
+    SettingsUi.enableMusicChallengesCheckbox:SetChecked(LidlRouletteDB.settings.areMusicChallengesEnabled)
 end)
 
 local settingsCategory
