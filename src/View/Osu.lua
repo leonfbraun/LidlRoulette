@@ -70,7 +70,8 @@ local BG_COLOR = { 0.035, 0.075, 0.13 }
 local INNER_COLOR = { 0.12, 0.2, 0.35 }
 local RING_COLOR = { 0.25, 0.85, 1 }
 
-local TIMING_INSTRUCTION = "Klicke, wenn der Ring den Kreis berührt  |  Slider: Taste halten und dem Ball folgen  |  Spinner: halten und um die Mitte kreisen"
+local TIMING_INSTRUCTION = "Linksklick, Y oder X, wenn der Ring den Kreis berührt  |  Slider: halten und dem Ball folgen  |  Spinner: halten und um die Mitte kreisen"
+local ACTION_KEYS = { Y = true, X = true }
 local HIT_SOUND_FILE = "Interface\\AddOns\\LidlRoulette\\src\\Media\\Sounds\\OSU\\OsuHitSound.ogg"
 
 local frame
@@ -112,6 +113,8 @@ local active = false
 local musicStarted = false
 local scoreDirty = false
 local feedbackExpiresAt
+local heldKeys = {}
+local keyboardReady = false
 
 local function Clamp(value, low, high)
     if value < low then
@@ -203,7 +206,25 @@ local function GetCursorInPlayfield()
 end
 
 local function IsActionDown()
-    return IsMouseButtonDown("LeftButton") or IsMouseButtonDown("RightButton")
+    return next(heldKeys) ~= nil or IsMouseButtonDown("LeftButton") or IsMouseButtonDown("RightButton")
+end
+
+-- SetPropagateKeyboardInput ist im Kampf gesperrt. Dort lösen Y/X zusätzlich ihre Keybinds aus.
+local function SetKeyPropagation(enabled)
+    if not InCombatLockdown() then
+        frame:SetPropagateKeyboardInput(enabled)
+    end
+end
+
+-- Ein neuer Frame würde alle Tasten schlucken. Die Tastatur wird daher erst aktiviert, sobald
+-- die Weitergabe eingeschaltet werden kann. Bis dahin funktioniert nur die Maus.
+local function PrepareKeyboard()
+    if keyboardReady or InCombatLockdown() then
+        return
+    end
+    frame:SetPropagateKeyboardInput(true)
+    frame:EnableKeyboard(true)
+    keyboardReady = true
 end
 
 -- ---------------------------------------------------------------------------
@@ -1055,6 +1076,8 @@ local function StopGame(showResult)
         FadeBackgroundMusic(originalVolume)
     end
     musicStarted = false
+    heldKeys = {}
+    SetKeyPropagation(true)
     cursorFeedbackFrame:Hide()
     feedbackExpiresAt = nil
 
@@ -1254,6 +1277,26 @@ local function Initialize()
         end
     end)
 
+    -- Y/X zählen wie ein Mausklick und werden während des Spiels nicht ans Spiel weitergegeben.
+    frame:SetScript("OnKeyDown", function(_, key)
+        if not active or not ACTION_KEYS[key] then
+            SetKeyPropagation(true)
+            return
+        end
+
+        SetKeyPropagation(false)
+        if not heldKeys[key] then
+            heldKeys[key] = true
+            HandleClick()
+        end
+    end)
+    frame:SetScript("OnKeyUp", function(_, key)
+        if ACTION_KEYS[key] then
+            heldKeys[key] = nil
+            SetKeyPropagation(true)
+        end
+    end)
+
     -- Ebenen: Approach-Ringe < Slider-Körper < Kreise/Bälle < Spinner
     local baseLevel = playfield:GetFrameLevel()
     approachLayer = CreateFrame("Frame", nil, playfield)
@@ -1390,6 +1433,7 @@ function OsuUi:Start(challengeIDArg)
     if active then
         StopGame(false)
     end
+    PrepareKeyboard()
 
     local selected = validSongs[math.random(#validSongs)]
     local selectedWindows = DIFFICULTY[selected.song.difficulty] or DIFFICULTY.medium

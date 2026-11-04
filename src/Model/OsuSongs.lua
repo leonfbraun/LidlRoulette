@@ -14,6 +14,126 @@ addonTable.OsuSongs = {
         targetPercent = 0.5,
     },
     {
+        title = "Bakemonogatari - Renai Circulation",
+        music = "Interface\\AddOns\\LidlRoulette\\src\\Media\\Sounds\\GuitarHero\\RenaiCirculation.ogg",
+        chartSourceTitle = "Bakemonogatari - Renai Circulation",
+        bpm = 120,
+        duration = 90,
+        beatOffset = 0,
+        timingOffset = 0,
+        stepsPerBeat = 2,
+        difficulty = "medium",
+        targetPercent = 0.55,
+    },
+    {
+        title = "Leni Wöss - Auro",
+        music = "Interface\\AddOns\\LidlRoulette\\src\\Media\\Sounds\\GuitarHero\\Aura.ogg",
+        chartSourceTitle = "Leni Wöss - Auro",
+        bpm = 98,
+        duration = 132,
+        beatOffset = 0,
+        timingOffset = 0,
+        stepsPerBeat = 2,
+        difficulty = "hard",
+        targetPercent = 0.5,
+    },
+    {
+        title = "JoJo Steel Ball Run - Spin",
+        music = "Interface\\AddOns\\LidlRoulette\\src\\Media\\Sounds\\GuitarHero\\Spin.ogg",
+        chartSourceTitle = "JoJo Steel Ball Run - Spin",
+        bpm = 73,
+        duration = 90,
+        beatOffset = 0,
+        timingOffset = 0,
+        stepsPerBeat = 2,
+        difficulty = "easy",
+        targetPercent = 0.6,
+    },
+    {
+        title = "Micheal Jackson - Chicago",
+        music = "Interface\\AddOns\\LidlRoulette\\src\\Media\\Sounds\\GuitarHero\\MichealJackson.ogg",
+        chartSourceTitle = "Micheal Jackson - Chicago",
+        bpm = 88,
+        duration = 87,
+        beatOffset = 0,
+        timingOffset = 0,
+        stepsPerBeat = 2,
+        difficulty = "medium",
+        targetPercent = 0.55,
+    },
+    {
+        title = "1, 2 Oatmeal",
+        music = "Interface\\AddOns\\LidlRoulette\\src\\Media\\Sounds\\GuitarHero\\Oatmeal.ogg",
+        chartSourceTitle = "1, 2 Oatmeal",
+        bpm = 124.5,
+        duration = 132,
+        beatOffset = 0,
+        timingOffset = 0,
+        stepsPerBeat = 2,
+        difficulty = "hard",
+        targetPercent = 0.5,
+    },
+    {
+        title = "Kiryu - Bakamitai",
+        music = "Interface\\AddOns\\LidlRoulette\\src\\Media\\Sounds\\GuitarHero\\Bakamitai.ogg",
+        chartSourceTitle = "Kiryu - Bakamitai",
+        bpm = 74,
+        duration = 121,
+        beatOffset = 0,
+        timingOffset = 0,
+        stepsPerBeat = 2,
+        difficulty = "easy",
+        targetPercent = 0.6,
+    },
+    {
+        title = "Bring Me To Life",
+        music = "Interface\\AddOns\\LidlRoulette\\src\\Media\\Sounds\\GuitarHero\\BringMeToLife.ogg",
+        chartSourceTitle = "Bring Me To Life",
+        bpm = 95,
+        duration = 123,
+        beatOffset = 0,
+        timingOffset = 0,
+        stepsPerBeat = 2,
+        difficulty = "easy",
+        targetPercent = 0.6,
+    },
+    {
+        title = "Not Cute Anymore x Hit 'Em Up",
+        music = "Interface\\AddOns\\LidlRoulette\\src\\Media\\Sounds\\GuitarHero\\NotCuteAnymoreXHitEmUp.ogg",
+        chartSourceTitle = "Not Cute Anymore x Hit 'Em Up",
+        bpm = 99,
+        duration = 137,
+        beatOffset = 0,
+        timingOffset = 0,
+        stepsPerBeat = 2,
+        difficulty = "medium",
+        targetPercent = 0.55,
+    },
+    {
+        title = "Gary komm heim",
+        music = "Interface\\AddOns\\LidlRoulette\\src\\Media\\Sounds\\GuitarHero\\GaryKommHeim.ogg",
+        chartSourceTitle = "Gary komm heim",
+        bpm = 80.85,
+        duration = 104,
+        beatOffset = 0,
+        timingOffset = 0,
+        stepsPerBeat = 2,
+        difficulty = "easy",
+        targetPercent = 0.6,
+    },
+    {
+        title = "Go-Go Loser Ranger - Jikai Yokoku",
+        music = "Interface\\AddOns\\LidlRoulette\\src\\Media\\Sounds\\GuitarHero\\GoGoLoserRanger.ogg",
+        chartSourceTitle = "Go-Go Loser Ranger - Jikai Yokoku",
+        bpm = 160,
+        duration = 90,
+        beatOffset = 0,
+        timingOffset = 0,
+        stepsPerBeat = 2,
+        difficulty = "hard",
+        targetPercent = 0.5,
+    },
+    {
         -- Legendäre Challenge: eigenes Chart mit Kreisen, Slidern, Reverse-Slidern und Spinnern.
         -- Wird nur gespielt, wenn die Challenge osuSong = "Pizza Tower - It's Pizza Time!" setzt.
         title = "Pizza Tower - It's Pizza Time!",
@@ -21,7 +141,7 @@ addonTable.OsuSongs = {
         exclusive = true,
         bpm = 180,
         duration = 229,
-        beatOffset = 0.035,
+        beatOffset = 0,
         timingOffset = 0,
         stepsPerBeat = 4,           -- 1 Zeichen im Chart = 1/16-Note
         difficulty = "legendary",
@@ -76,31 +196,3 @@ addonTable.OsuSongs = {
         ]],
     },
 }
-
--- Alle Guitar-Hero-Songs sind automatisch auch in Osu! spielbar (Chart wird beim Start umgewandelt).
--- Ein eigener Eintrag oben mit gleichem chartSourceTitle hat Vorrang.
-local TARGET_PERCENT_BY_DIFFICULTY = { easy = 0.6, medium = 0.55, hard = 0.5 }
-
-local configuredCharts = {}
-for _, osuSong in ipairs(addonTable.OsuSongs) do
-    if osuSong.chartSourceTitle then
-        configuredCharts[osuSong.chartSourceTitle] = true
-    end
-end
-
-for _, guitarSong in ipairs(addonTable.GuitarHeroSongs) do
-    if not configuredCharts[guitarSong.title] then
-        table.insert(addonTable.OsuSongs, {
-            title = guitarSong.title,
-            music = guitarSong.music,
-            chartSourceTitle = guitarSong.title,
-            bpm = guitarSong.bpm,
-            duration = guitarSong.duration,
-            beatOffset = guitarSong.beatOffset,
-            timingOffset = 0,
-            stepsPerBeat = guitarSong.stepsPerBeat,
-            difficulty = guitarSong.difficulty,
-            targetPercent = TARGET_PERCENT_BY_DIFFICULTY[guitarSong.difficulty],
-        })
-    end
-end
