@@ -29,7 +29,7 @@ addonTable.OsuSongs = {
         targetPercent = 0.3,
     },
     {
-        title = "Leni Wöss - Auro",
+        title = "Leni Wöss - Aura",
         music = "Interface\\AddOns\\LidlRoulette\\src\\Media\\Sounds\\GuitarHero\\Aura.ogg",
         chartSourceTitle = "Leni Wöss - Auro",
         bpm = 98,

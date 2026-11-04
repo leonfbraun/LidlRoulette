@@ -13,7 +13,7 @@ addonTable.GuitarHeroSongs = {
         targetScore = 10200,
     },
     {
-        title = "Leni Wöss - Auro",
+        title = "Leni Wöss - Aura",
         music = "Interface\\AddOns\\LidlRoulette\\src\\Media\\Sounds\\GuitarHero\\Aura.ogg",
         bpm = 98,
         duration = 132,
