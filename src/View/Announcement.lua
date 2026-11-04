@@ -86,7 +86,10 @@ function AnnouncementUi:ShowAnnouncement(playerName, challengerName, level, chal
         compactTitle = "Song: " .. tostring(challengeSong or "Unbekannt")
         compactDescription = "Score: " .. tostring(comboHighScore or "-") ..
             (targetScore and (" / " .. tostring(targetScore)) or "") .. " Punkte"
-        if targetScore and comboHighScore ~= nil and comboHighScore >= targetScore then
+        -- Steuern fallen nur bei nicht bestandener Runde an. Das erfasst auch einen Abbruch, bei dem
+        -- die Punktzahl das Ziel schon erreicht hatte.
+        local isTaxed = taxSilver ~= nil and taxSilver > 0
+        if targetScore and comboHighScore ~= nil and comboHighScore >= targetScore and not isTaxed then
             compactDescription = compactDescription .. " - |cff73ff8cZiel erreicht!|r"
         elseif targetScore and comboHighScore ~= nil then
             compactDescription = compactDescription .. " - |cffff4747Ziel verfehlt, Steuern: " ..

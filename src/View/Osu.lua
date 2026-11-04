@@ -1063,7 +1063,9 @@ local function UpdateSpinner(obj, elapsed, cursorX, cursorY, held)
     end
 end
 
-local function StopGame(showResult)
+-- canceled: Der Spieler hat abgebrochen. Das zählt immer als nicht bestanden, auch wenn die
+-- Punktzahl das Ziel zu diesem Zeitpunkt schon erreicht hatte.
+local function StopGame(showResult, canceled)
     if not active then
         return
     end
@@ -1097,11 +1099,12 @@ local function StopGame(showResult)
                 misses = misses + 1
             end
         end
-        statusText:SetText("Song beendet | Treffer: " .. hits .. " | Verfehlt: " .. misses)
+        statusText:SetText((canceled and "Abgebrochen" or "Song beendet") .. " | Treffer: " .. hits .. " | Verfehlt: " .. misses)
+        feedbackText:SetText("")
         closeButton:SetText("Schließen")
         UpdateScore()
         print("|cff2674cc[L|cffff0000i|rDL Roulette]|r Osu!: " .. song.title ..
-            " beendet. Score: " .. score .. " | Treffer: " .. hits .. " | Verfehlt: " .. misses)
+            (canceled and " abgebrochen" or " beendet") .. ". Score: " .. score .. " | Treffer: " .. hits .. " | Verfehlt: " .. misses)
 
         -- Hilfe zum Kalibrieren: Klickst du im Schnitt zu spät, timingOffset erhöhen (und umgekehrt).
         if errorCount >= 15 then
@@ -1113,7 +1116,7 @@ local function StopGame(showResult)
             end
         end
 
-        local taxSilver = score < targetScore and addonTable:GetTaxSilver() or 0
+        local taxSilver = (canceled or score < targetScore) and addonTable:GetTaxSilver() or 0
         addonTable:OnLocalTimerEvent(
             challengeID,
             "OSUFINISHED",
@@ -1360,7 +1363,7 @@ local function Initialize()
     closeButton:SetPoint("BOTTOM", frame, "BOTTOM", 0, 12)
     closeButton:SetScript("OnClick", function()
         if active then
-            StopGame(false)
+            StopGame(true, true)
         else
             frame:Hide()
         end

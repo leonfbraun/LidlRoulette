@@ -716,7 +716,7 @@ local function GetAccuracy()
     return #notes > 0 and judgedWeight / #notes or 0
 end
 
-local function ShowResults(taxSilver)
+local function ShowResults(taxSilver, canceled)
     local accuracy = GetAccuracy()
     local rank = RANKS[#RANKS]
     for _, candidate in ipairs(RANKS) do
@@ -726,7 +726,10 @@ local function ShowResults(taxSilver)
         end
     end
 
-    if score >= targetScore then
+    if canceled then
+        results.verdict:SetText("|cffff4747ABGEBROCHEN|r")
+        results.tax:SetText("Steuern: " .. taxSilver .. " Silber")
+    elseif score >= targetScore then
         results.verdict:SetText("|cff73ff8cZIEL ERREICHT|r")
         results.tax:SetText("Keine Steuern!")
     else
@@ -768,7 +771,9 @@ local function ShowResults(taxSilver)
     results.frame:Show()
 end
 
-local function StopGame(showResult)
+-- canceled: Der Spieler hat abgebrochen. Das zählt immer als nicht bestanden, auch wenn die
+-- Punktzahl das Ziel zu diesem Zeitpunkt schon erreicht hatte.
+local function StopGame(showResult, canceled)
     if not active then
         return
     end
@@ -798,10 +803,10 @@ local function StopGame(showResult)
         UpdatePanels()
         closeButton:SetText("Schließen")
 
-        local taxSilver = score < targetScore and addonTable:GetTaxSilver() or 0
-        ShowResults(taxSilver)
+        local taxSilver = (canceled or score < targetScore) and addonTable:GetTaxSilver() or 0
+        ShowResults(taxSilver, canceled)
         print("|cff2674cc[L|cffff0000i|rDL Roulette]|r WoW-Hero: " .. song.title ..
-            " beendet. Score: " .. score .. " | Treffer: " .. (#notes - counts.miss) .. " | Verfehlt: " .. counts.miss)
+            (canceled and " abgebrochen" or " beendet") .. ". Score: " .. score .. " | Treffer: " .. (#notes - counts.miss) .. " | Verfehlt: " .. counts.miss)
         addonTable:OnLocalTimerEvent(
             challengeID,
             "GUITARHEROFINISHED",
@@ -1232,7 +1237,7 @@ local function Initialize()
     closeButton:SetFrameLevel(frame:GetFrameLevel() + 70)
     closeButton:SetScript("OnClick", function()
         if active then
-            StopGame(false)
+            StopGame(true, true)
         else
             frame:Hide()
         end
