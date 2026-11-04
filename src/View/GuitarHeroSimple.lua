@@ -37,6 +37,7 @@ local MISS_COLOR = { 1, 0.28, 0.28 }
 -- dass ohne Multiplikator genau targetScore herauskäme, und die Fehler in kleinen Gruppen verteilt.
 local REFERENCE_POINTS = 75
 local REFERENCE_MISS_CLUSTER = 4
+local TARGET_DIFFICULTY = 1.2   -- hebt das Ziel aller Songs an; 1 = reine Referenzrunde
 
 -- Layout
 local LANE_KEYS = { "W", "A", "S", "D" }
@@ -192,7 +193,7 @@ local function ComputeTargetScore(noteCount, baseTarget)
         end
         played = played + REFERENCE_MISS_CLUSTER
     end
-    return math.max(baseTarget, math.floor(total / 10 + 0.5) * 10)
+    return math.floor(math.max(baseTarget, total) * TARGET_DIFFICULTY / 10 + 0.5) * 10
 end
 
 local function GetRecords()
@@ -263,13 +264,8 @@ end
 -- Tastatur
 -- ---------------------------------------------------------------------------
 
--- SetPropagateKeyboardInput ist im Kampf gesperrt. Dort lösen W/A/S/D zusätzlich ihre Keybinds aus.
-local function SetKeyPropagation(enabled)
-    if not InCombatLockdown() then
-        frame:SetPropagateKeyboardInput(enabled)
-    end
-end
-
+-- Alle Tasten werden bewusst immer ans Spiel weitergegeben: Der Charakter soll beim Spielen mit
+-- W/A/S/D sichtbar hin und her laufen, das gehört zum Witz der Challenge.
 -- Ein neuer Frame würde alle Tasten schlucken. Die Tastatur wird daher erst aktiviert, sobald
 -- die Weitergabe eingeschaltet werden kann. Bis dahin lassen sich die Kreise anklicken.
 local function PrepareKeyboard()
@@ -771,7 +767,6 @@ local function StopGame(showResult)
     RestoreBackgroundMusic()
     musicStarted = false
     pressedKeys = {}
-    SetKeyPropagation(true)
     for index = #activeMarkers, 1, -1 do
         ReleaseMarker(activeMarkers[index])
     end
@@ -922,11 +917,9 @@ end
 local function HandleKeyDown(key)
     key = string.upper(key or "")
     if not active or not LANE_COLORS[key] then
-        SetKeyPropagation(true)
         return
     end
 
-    SetKeyPropagation(false)
     if not pressedKeys[key] then
         pressedKeys[key] = true
         HandlePress(key)
@@ -937,7 +930,6 @@ local function HandleKeyUp(key)
     key = string.upper(key or "")
     if LANE_COLORS[key] then
         pressedKeys[key] = nil
-        SetKeyPropagation(true)
     end
 end
 
@@ -1265,21 +1257,12 @@ local function Initialize()
         UpdateEffects(now, frameSeconds)
     end)
 
-    frame:RegisterEvent("PLAYER_REGEN_DISABLED")
+    -- Bei /reload oder Logout mitten im Song darf die Musik nicht stumm bleiben.
     frame:RegisterEvent("PLAYER_LOGOUT")
-    frame:SetScript("OnEvent", function(_, event)
-        if event == "PLAYER_REGEN_DISABLED" then
-            -- Letzte Gelegenheit vor der Kampfsperre: Sonst könnte eine gerade gehaltene
-            -- Taste die Weitergabe für den ganzen Kampf ausgeschaltet lassen.
-            if keyboardReady then
-                frame:SetPropagateKeyboardInput(true)
-            end
-        elseif event == "PLAYER_LOGOUT" then
-            -- Bei /reload oder Logout mitten im Song darf die Musik nicht stumm bleiben.
-            local volume = musicVolumeBeforeGame or musicVolumeRestoring
-            if volume ~= nil then
-                SetCVar("Sound_MusicVolume", string.format("%.3f", volume))
-            end
+    frame:SetScript("OnEvent", function()
+        local volume = musicVolumeBeforeGame or musicVolumeRestoring
+        if volume ~= nil then
+            SetCVar("Sound_MusicVolume", string.format("%.3f", volume))
         end
     end)
 
