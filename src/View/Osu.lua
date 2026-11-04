@@ -622,47 +622,51 @@ local function GetPathPoint(obj, fraction)
 end
 
 -- Wandelt ein Chart in eine Liste von Einträgen { kind, hitAt, seconds, slides } um.
---  * osuChart (eigenes Chart): o = Kreis, s = Slider, r = Reverse-Slider, p = Spinner,
---    "~" verlängert den davorstehenden Slider/Spinner um einen Schritt, "-" = Pause.
+--  * osuSections (eigenes Chart, ein Eintrag pro Tempo-Abschnitt): o = Kreis, s = Slider,
+--    r = Reverse-Slider, p = Spinner, "~" verlängert den davorstehenden Slider/Spinner um einen
+--    Schritt, "-" = Pause.
 --  * sonst wird das Guitar-Hero-Chart automatisch umgewandelt: Jede Note wird zum Kreis,
 --    nach ausreichender Lücke (mit Wahrscheinlichkeit sliderChance) zum Slider, bei sehr
 --    großer Lücke zum Spinner.
 local function CollectEntries(songData, chart, diff, rng)
     local entries = {}
-    local stepDuration = 60 / songData.bpm / songData.stepsPerBeat
-
-    if songData.osuChart then
-        local index = 1
-        while index <= #chart do
-            local token = chart:sub(index, index)
-            if token == "o" or token == "s" or token == "r" or token == "p" then
-                local steps = 1
-                while chart:sub(index + steps, index + steps) == "~" do
-                    steps = steps + 1
-                end
-
-                local hitAt = songData.beatOffset + (index - 1) * stepDuration
-                if hitAt < songData.duration then
-                    local seconds = math.min(steps * stepDuration, songData.duration - hitAt - 0.1)
-                    local entry = { kind = "circle", hitAt = hitAt }
-                    if token == "p" and seconds >= 0.9 then
-                        entry.kind = "spinner"
-                        entry.seconds = seconds
-                    elseif (token == "s" or token == "r") and seconds - 0.05 >= 0.3 then
-                        entry.kind = "slider"
-                        entry.seconds = seconds
-                        entry.slides = (token == "r" and seconds >= 0.6) and 2 or 1
+    if songData.osuSections then
+        for _, section in ipairs(songData.osuSections) do
+            local sectionChart = section.chart:gsub("%s", "")
+            local sectionStep = 60 / section.bpm / section.stepsPerBeat
+            local index = 1
+            while index <= #sectionChart do
+                local token = sectionChart:sub(index, index)
+                if token == "o" or token == "s" or token == "r" or token == "p" then
+                    local steps = 1
+                    while sectionChart:sub(index + steps, index + steps) == "~" do
+                        steps = steps + 1
                     end
-                    table.insert(entries, entry)
+
+                    local hitAt = songData.beatOffset + section.startTime + (index - 1) * sectionStep
+                    if hitAt < songData.duration then
+                        local seconds = math.min(steps * sectionStep, songData.duration - hitAt - 0.1)
+                        local entry = { kind = "circle", hitAt = hitAt }
+                        if token == "p" and seconds >= 0.9 then
+                            entry.kind = "spinner"
+                            entry.seconds = seconds
+                        elseif (token == "s" or token == "r") and seconds - 0.05 >= 0.3 then
+                            entry.kind = "slider"
+                            entry.seconds = seconds
+                            entry.slides = (token == "r" and seconds >= 0.6) and 2 or 1
+                        end
+                        table.insert(entries, entry)
+                    end
+                    index = index + steps
+                else
+                    index = index + 1
                 end
-                index = index + steps
-            else
-                index = index + 1
             end
         end
         return entries
     end
 
+    local stepDuration = 60 / songData.bpm / songData.stepsPerBeat
     local sliderChance = songData.sliderChance or diff.sliderChance
     local allowSpinners = songData.spinners ~= false
     local noteTimes = {}
@@ -1363,6 +1367,26 @@ local function Initialize()
     end)
 end
 
+local function AreSectionsValid(sections)
+    if #sections == 0 then
+        return false
+    end
+    for _, section in ipairs(sections) do
+        if type(section.startTime) ~= "number" or section.startTime < 0
+            or type(section.bpm) ~= "number" or section.bpm < 30 or section.bpm > 300
+            or type(section.stepsPerBeat) ~= "number" or section.stepsPerBeat < 1 or section.stepsPerBeat > 8
+            or section.stepsPerBeat ~= math.floor(section.stepsPerBeat)
+            or type(section.chart) ~= "string" then
+            return false
+        end
+        local sectionChart = section.chart:gsub("%s", "")
+        if #sectionChart == 0 or #sectionChart > MAX_CHART_STEPS or not sectionChart:match("^[osrp~%-]+$") then
+            return false
+        end
+    end
+    return true
+end
+
 function OsuUi:Start(challengeIDArg)
     local challenge = addonTable.Roulette.GetChallenge(challengeIDArg)
     if not challenge or not challenge.osu then
@@ -1379,11 +1403,10 @@ function OsuUi:Start(challengeIDArg)
     local validSongs = {}
     for _, candidate in ipairs(addonTable.OsuSongs or {}) do
         local sourceChart
-        if type(candidate.osuChart) == "string" then
-            -- eigenes Osu!-Chart (o, s, r, p, ~, -)
-            local manualChart = candidate.osuChart:gsub("%s", "")
-            if #manualChart > 0 and #manualChart <= MAX_CHART_STEPS and manualChart:match("^[osrp~%-]+$") then
-                sourceChart = manualChart
+        if type(candidate.osuSections) == "table" then
+            -- eigenes Osu!-Chart: BuildObjects liest die Abschnitte direkt aus dem Song
+            if AreSectionsValid(candidate.osuSections) then
+                sourceChart = ""
             end
         else
             -- Chart wird aus dem Guitar-Hero-Song übernommen
