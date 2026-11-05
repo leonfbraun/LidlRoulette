@@ -40,10 +40,10 @@ local REFERENCE_MISS_CLUSTER = 4
 local TARGET_DIFFICULTY = 2.1     -- hebt das Ziel aller Songs an; 1 = reine Referenzrunde
 
 -- Layout
-local LANE_KEYS = { "W", "A", "S", "D" }
+local LANE_KEYS = { "A", "W", "S", "D" }
 local LANE_COLORS = {
-    W = { 0.25, 0.85, 0.42 },
-    A = { 0.95, 0.78, 0.22 },
+    A = { 0.25, 0.85, 0.42 },
+    W = { 0.95, 0.78, 0.22 },
     S = { 0.9, 0.3, 0.28 },
     D = { 0.25, 0.62, 0.95 },
 }
