@@ -98,9 +98,9 @@ end
 function Roulette.GetRaritySound(rarity)
     local sounds = {
         Common = SOUNDKIT.IG_QUEST_LIST_COMPLETE,
-        Uncommon = SOUNDKIT.LFG_REWARDS,
+        Uncommon = SOUNDKIT.IG_QUEST_LIST_COMPLETE,
         Rare = SOUNDKIT.UI_WORLDQUEST_COMPLETE,
-        Epic = SOUNDKIT.UI_EPICLOOT_TOAST,
+        Epic = SOUNDKIT.LFG_REWARDS,
         Legendary = SOUNDKIT.UI_LEGENDARY_LOOT_TOAST,
     }
 

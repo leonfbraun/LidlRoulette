@@ -58,7 +58,7 @@ addonTable.Challenges = {
     { rarity= "Legendary", tags={ "Negativ" }, timeInSeconds=1200, title= "Die Socken bleiben an", description="Zieh deinem Charakter für die nächsten 20 Minuten alles außer die Schuhe aus"},
     { rarity= "Legendary", tags={ "Negativ"}, title="Time to say goodbye", description= "Verabschiede dich von einem deiner aktuell getragenen Ausrüstungsgegenständen (Hemd ausgeschlossen!) und verkauf es"},
     { rarity= "Legendary", tags={ "Positiv" }, title= "JACKPOT!", description="Du bist reich! Hol dir den Gilden-Jackpot ab!"},
-    { rarity= "Legendary", tags={ "Negativ", "Clanker", "Musik" }, osu=true, osuSong="Pizza Tower - It's Pizza Time!", title="Osu!: Legendary", description="Spiele Pizza Tower - It's Pizza Time! in Osu!. Verfehlst du den Zielscore, zahle Steuern gemäß \"/lidl steuer\" in Silber an die Gilde."},
+    { rarity= "Legendary", tags={ "Negativ", "Clanker", "Musik" }, osu=true, osuSong="Pizza Tower - It's Pizza Time!", title="Osu!: Legendary", description="It's Pizza Time! Verfehlst du den Zielscore, zahle DOPPELTE Steuern gemäß \"/lidl steuer\" in Silber an die Gilde."},
 }
 
 local knownTags = {}
