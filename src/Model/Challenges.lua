@@ -12,6 +12,7 @@ addonTable.RarityWeights = {
 addonTable.ChallengeTags = { "Positiv", "Negativ", "Sport", "Clanker", "Musik" }
 
 addonTable.Challenges = {
+    { rarity= "Common", tags={ "Negativ", "Sport" }, title= "Jump-Style", description="Mache 30 Jumping Jacks!"},
     { rarity= "Common", tags={ "Negativ", "Sport" }, title= "Liegestütze", description="Mache sofort 10 Liegestütze!"},
     { rarity= "Common", tags={ "Negativ" }, timeInSeconds=300, title= "Floor is lava", description="Du darfst für 5 Minuten mit keinem Körperteil den Boden berühren. Kleidung schützt nicht vor Verbrennungen."},
     { rarity= "Common", tags={ "Positiv", "Sport" }, title= "You are so tight!", description="Dehne deinen Nacken! (3x mal in jede Richtung)"},
@@ -35,14 +36,15 @@ addonTable.Challenges = {
     { rarity= "Uncommon", tags={ "Negativ", "Sport" }, title= "Dann doch lieber 10 Hs", description="Mache 3 Burpees"},
     { rarity= "Uncommon", tags={ "Negativ", "Clanker", "Musik" }, guitarHero=true, guitarHeroDifficulty="medium", title="WoW-Hero: Medium", description="Spiele einen zufälligen Song der Schwierigkeitsstufe Medium in WoW-Hero. Verfehlst du den Zielscore, zahle Steuern gemäß \"/lidl steuer\" in Silber an die Gilde."},
     { rarity= "Uncommon", tags={ "Negativ", "Clanker", "Musik" }, osu=true, osuDifficulty="easy", title="Osu!: Easy", description="Spiele einen zufälligen Song der Schwierigkeitsstufe Easy in Osu!. Verfehlst du den Zielscore, zahle Steuern gemäß \"/lidl steuer\" in Silber an die Gilde."},
+    { rarity= "Rare", tags={ "Negativ"}, timeInSeconds=600, title= "Rettungssanitäter", description="Heile für die nächsten 15 Minuten ALLE verletzten Spieler in deiner Nähe. Zur Not müssen Verbände herhalten"},
     { rarity= "Rare", tags={ "Negativ"}, title= "Tax-Time!", description="Zahle Steuern an deine Gilde. Den Betrag erfährst du mit \"/lidl steuer\"."},
     { rarity= "Rare", tags={ "Negativ" }, title="Bisschen Kleingeld?", description="Bettle bei einem Spieler für ein bisschen Kleingeld. Dein Ertrag kommt in die Gildenbank"},
     { rarity= "Rare", tags={ "Negativ" }, title="Prost!", description="Besorg dir in der Taverne etwas alkohilisches zum Trinken und sauf dich voll!" },
     { rarity= "Rare", tags={ "Positiv", "Clanker" }, timeInSeconds=300, devilMayCryCombo=true, title="Devil May Cry", description="Für 5 Minuten lassen Treffer an Monstern deinen Combo-Meter steigen. Halte die Kombo am Leben und knacke den Highscore!" },
     { rarity= "Rare", tags={ "Positiv", "Clanker" }, timeInSeconds=300, bayonettaCombo=true, title="Witchtime", description="Sammle in 5 Minuten Combo Points. Halte die Kombo am Leben und schlage den Highscore!" },
-    { rarity= "Rare", tags={ "Positiv", "Multiplayer" }, title="For me? *blushes*", description="Deine Mitspieler schenken dir die Mats für ein von dir herstellbares Item!"},
+    { rarity= "Rare", tags={ "Positiv", "Multiplayer" }, title="For me? *blushes*", description="Deine Mitspieler haben dich lieb. Lass dir von jedem Mitspieler (der Online ist) ein Geschenk geben. (per Post geht auch)"},
     { rarity= "Rare", tags={ "Positiv", "Multiplayer" }, title= "Story Time", description="Erzähle den anderen eine Geschichte :)"},
-    { rarity= "Rare", tags={ "Negativ" }, timeInSeconds=600,  title= "/Muted", description="Sprich die nächsten 10 Minuten nur noch über /say (kein Voice-Chat)"},
+    { rarity= "Rare", tags={ "Negativ" }, timeInSeconds=600,  title= "/Muted", description="Sprich die nächsten 10 Minuten nur noch über /say oder Flüster-Chat (kein Voice-Chat)"},
     { rarity= "Rare", tags={ "Negativ", "Clanker", "Musik" }, guitarHero=true, guitarHeroDifficulty="hard", title="WoW-Hero: Hard", description="Spiele einen zufälligen Song der Schwierigkeitsstufe Hard in WoW-Hero. Verfehlst du den Zielscore, zahle Steuern gemäß \"/lidl steuer\" in Silber an die Gilde."},
     { rarity= "Rare", tags={ "Negativ", "Clanker", "Musik" }, osu=true, osuDifficulty="medium", title="Osu!: Medium", description="Spiele einen zufälligen Song der Schwierigkeitsstufe Medium in Osu!. Verfehlst du den Zielscore, zahle Steuern gemäß \"/lidl steuer\" in Silber an die Gilde."},
     { rarity= "Rare", tags={ "Negativ", "Clanker" }, timeInSeconds=300, keybindingShuffle="actionbuttons", title="Switcharoo", description="Die Tastenbelegung deiner Aktionsleiste ist für 5 Minuten vertauscht" },
@@ -54,7 +56,7 @@ addonTable.Challenges = {
     { rarity= "Epic", tags={ "Positiv", "Sport" }, title= "Sally goes up", description="Wenn du einen Stehschreibtisch hast, fahre ihn bis zum nächsten Event hoch. Wenn nicht, stehe auf und versuche 60 Sekunden mit durchgestreckten Beinen deine Zehen zu erreichen."},
     { rarity= "Epic", tags={ "Negativ", "Clanker", "Musik" }, osu=true, osuDifficulty="hard", title="Osu!: Hard", description="Spiele einen zufälligen Song der Schwierigkeitsstufe Hard in Osu!. Verfehlst du den Zielscore, zahle Steuern gemäß \"/lidl steuer\" in Silber an die Gilde."},
     { rarity= "Legendary", tags={ "Negativ" }, timeInSeconds=1200, title= "Die Socken bleiben an", description="Zieh deinem Charakter für die nächsten 20 Minuten alles außer die Schuhe aus"},
-    { rarity= "Legendary", tags={ "Negativ"}, title="Time to say goodbye", description= "Verabschiede dich von einem deiner aktuell getragenen Ausrüstungsgegenständen und verkauf es"},
+    { rarity= "Legendary", tags={ "Negativ"}, title="Time to say goodbye", description= "Verabschiede dich von einem deiner aktuell getragenen Ausrüstungsgegenständen (Hemd ausgeschlossen!) und verkauf es"},
     { rarity= "Legendary", tags={ "Positiv" }, title= "JACKPOT!", description="Du bist reich! Hol dir den Gilden-Jackpot ab!"},
     { rarity= "Legendary", tags={ "Negativ", "Clanker", "Musik" }, osu=true, osuSong="Pizza Tower - It's Pizza Time!", title="Osu!: Legendary", description="Spiele Pizza Tower - It's Pizza Time! in Osu!. Verfehlst du den Zielscore, zahle Steuern gemäß \"/lidl steuer\" in Silber an die Gilde."},
 }
