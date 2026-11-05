@@ -2,10 +2,10 @@ local addonName, addonTable = ...
 
 addonTable.RarityWeights = {
     { rarity="Legendary", weight=3 },
-    { rarity="Epic", weight=10 },
-    { rarity="Rare", weight=17 },
+    { rarity="Epic", weight=12 },
+    { rarity="Rare", weight=20 },
     { rarity="Uncommon", weight=25 },
-    { rarity="Common", weight=45 },
+    { rarity="Common", weight=40 },
     { rarity="poor", weight=0 },
 }
 
@@ -42,8 +42,8 @@ addonTable.Challenges = {
     { rarity= "Rare", tags={ "Negativ" }, title="Prost!", description="Besorg dir in der Taverne etwas alkohilisches zum Trinken und sauf dich voll!" },
     { rarity= "Rare", tags={ "Positiv", "Clanker" }, timeInSeconds=300, devilMayCryCombo=true, title="Devil May Cry", description="Für 5 Minuten lassen Treffer an Monstern deinen Combo-Meter steigen. Halte die Kombo am Leben und knacke den Highscore!" },
     { rarity= "Rare", tags={ "Positiv", "Clanker" }, timeInSeconds=300, bayonettaCombo=true, title="Witchtime", description="Sammle in 5 Minuten Combo Points. Halte die Kombo am Leben und schlage den Highscore!" },
-    { rarity= "Rare", tags={ "Positiv", "Multiplayer" }, title="For me? *blushes*", description="Deine Mitspieler haben dich lieb. Lass dir von jedem Mitspieler (der Online ist) ein Geschenk geben. (per Post geht auch)"},
-    { rarity= "Rare", tags={ "Positiv", "Multiplayer" }, title= "Story Time", description="Erzähle den anderen eine Geschichte :)"},
+    { rarity= "Rare", tags={ "Positiv" }, title="For me? *blushes*", description="Deine Mitspieler haben dich lieb. Lass dir von jedem Mitspieler (der Online ist) ein Geschenk geben. (per Post geht auch)"},
+    { rarity= "Rare", tags={ "Positiv" }, title= "Story Time", description="Erzähle den anderen eine Geschichte :)"},
     { rarity= "Rare", tags={ "Negativ" }, timeInSeconds=600,  title= "/Muted", description="Sprich die nächsten 10 Minuten nur noch über /say oder Flüster-Chat (kein Voice-Chat)"},
     { rarity= "Rare", tags={ "Negativ", "Clanker", "Musik" }, guitarHero=true, guitarHeroDifficulty="hard", title="WoW-Hero: Hard", description="Spiele einen zufälligen Song der Schwierigkeitsstufe Hard in WoW-Hero. Verfehlst du den Zielscore, zahle Steuern gemäß \"/lidl steuer\" in Silber an die Gilde."},
     { rarity= "Rare", tags={ "Negativ", "Clanker", "Musik" }, osu=true, osuDifficulty="medium", title="Osu!: Medium", description="Spiele einen zufälligen Song der Schwierigkeitsstufe Medium in Osu!. Verfehlst du den Zielscore, zahle Steuern gemäß \"/lidl steuer\" in Silber an die Gilde."},
