@@ -1,5 +1,8 @@
 local addonName, addonTable = ...
 
+-- targetPercent (0 bis 1) bezieht sich auf die Maximalpunktzahl: jede Note exakt getroffen, ohne
+-- Combo-Abriss. Exakte Treffer sind kaum durchzuhalten, realistisch erreichbar ist deutlich weniger.
+
 addonTable.GuitarHeroSongs = {
     {
         title = "Bakemonogatari - Renai Circulation",
@@ -10,7 +13,7 @@ addonTable.GuitarHeroSongs = {
         stepsPerBeat = 2,
         chart = "------W---S---W---S---W---S---WS--S-A-W-D-WSD-W-D-SSA-W-D-SSD-W-D-SAD-S-S-SDA-W-A-SSA-W-A-SSA-W-A-SSA-W-A-SSS-WDD-SSD-WAD-SSD-W-S-SSD-W-DAS-S-W-D-WSA-W-A-SDD-W-D-SDD-W-S-SWD-W-D-DDA-W-D-S-D-W-AAS-A-W-A-SSA-W-A-SDA-W-D-WSD-SAA-SSD-DAD-SSD-WAD-SSD-W-D-SSD-W-DDW-A-D-D-S-A-WDD-S-D-D-D-WSA-W-D-WWD-S-D-S-A-W-A-W-W-W-A-S-A-W-A-SDA-W-A-WWA-W-A-W-W-W-A-D-A-S---------",
         difficulty= "medium",
-        targetScore = 10200,
+        targetPercent = 0.90,
     },
     {
         title = "Leni Wöss - Aura",
@@ -21,7 +24,7 @@ addonTable.GuitarHeroSongs = {
         stepsPerBeat = 2,
         chart = "----------------------------W--WWSW-DS--SAD---DDW-AWS-A---SSS-DAW-DAD-DSW-SSS-DDW-AA-WDDW-ASD-SDW-ASD-A-D-D-SWD-WSA-W-D--SSSA-A-DWW-S-SSA-SAS-WAS-WWS-WWW-D-ADW-WDW-SW--DAS--WDDW-DWS-A-W-DSD-SAW-DS-SSDW-SSD-DDW-AA-WADW-ASS-DSS-DSS-S-DWD-ASS-W-AW-SD-SAA-SSD-WDA-SDA-WDD-AWS-WWA-WDD-WSA---D-W-A--WS------SS-W-------W-S-S-SDW-WAD---SAA---DAW-AAS-AA--SSD-SAW-DAD-SDW-DWS-DSW-AA-WDDW-ASD-D------------------------------------------------",
         difficulty= "hard",
-        targetScore = 12870,
+        targetPercent = 0.65,
     },
     {
         title = "JoJo Steel Ball Run - Spin",
@@ -32,7 +35,7 @@ addonTable.GuitarHeroSongs = {
         stepsPerBeat = 2,
         chart = "----A-----S-ADD-WWS-WSS-SWD-SSW-WSS-SDW-DSD-WDS-SDD-WSW-DDS-AAA-DDW-SDW-SDA-SSA--WW-ADS-SAW-WSS-SWW-SAS-WDA-AS--D-A-WW-WSSS--WW-D-DW--W-DSW-DWS-WWS-AWS-WAD-ADS-DAA-DAD-AAS-DDD-AWA-ASA-SDD-SWD-DAA-WAS-DDS-DDW-S---------",
         difficulty= "easy",
-        targetScore = 6480,
+        targetPercent = 0.90,
     },
     {
         title = "Micheal Jackson - Chicago",
@@ -43,7 +46,7 @@ addonTable.GuitarHeroSongs = {
         stepsPerBeat = 2,
         chart = "--------------------------D-W-AW-WD-W-A--WD-W-AW-WD-W-AW--A-S-AWS-A-WDD-SWD-W-DWS-D-SSA-SSD-WSA-DSA-WDA-SSD-SDD--SADS-AAA-DSS-S--DS------S--S-------------D-W-AW-SA-W-AW-SD-W-AW-WD-W-AW-SD-W-ASS-DSW-SSS-DDW-ASS-D-W-ASS-DSW-AWA-D-WDA-DSD-WSA-SSD-WDD-ASD----",
         difficulty= "medium",
-        targetScore = 6900,
+        targetPercent = 0.90,
     },
     {
         title = "1, 2 Oatmeal",
@@ -53,8 +56,8 @@ addonTable.GuitarHeroSongs = {
         beatOffset = 0.273,
         stepsPerBeat = 2,
         chart = "---SSW-WWSS-WSS--A-SSDD-AAD-DDA-DW-DA-SWS-SSD-ADA-WAD-S-DS-ADSD-SSW-SDA-WS-WDWA-ADW-DSS-SDD-DAD-WD-WSSA-SWS-SSD-SWD-DWS-SAA-DDS-ASD-DWW-WSD-DW-WSSA-DWD-DSD-WDS-ASW-ASA-AS-DSSA-ASA-SAS-WWS-SWA-ADS-SAA-WAW-A-WDA-AWW-ADD-WSA-DDD-SSD-SDA-DWS-DAS-AAS-ADS-WDA-DDW-DWD-SSA-DSA-DSW-WWS-DWS--ASWW-SDS-SAD-DDA-SDD-AD-SW-SSA-DDW-ASW-DA-SSWW-SSS-DAA-ADS-WDD-WSS-WWS-ASD-SAA---DWS-SAA-WWD-W-DDW-AWD-DWS--DDWD-S-ASW-S-SDD-WWW-AWA-WWS-WWS-WDA-SSD-DSS-SDA-SWD-WWD-DSS-WSA-AWA-DWW-AAW-AWD-WAA-DWW-WDD-WSA-SAA-DW-DWSA-SSW-DDW-AWS-W-SWW-WSA-WWS-DSS-ADS-A-DS-WWWS-S",
-        difficulty= "hard",
-        targetScore = 21945,
+        difficulty= "extreme",
+        targetPercent = 0.50,
     },
     {
         title = "Kiryu - Bakamitai",
@@ -65,7 +68,7 @@ addonTable.GuitarHeroSongs = {
         stepsPerBeat = 2,
         chart = "----DSS-S-D-D-S-D-S-S-D-A-D-SA-WS-SW-SD-A-SSA-A-A-S-A-W-A-W-A-D-A-A-D-W-A-SSS-WWA--SA-W-AWS-A-W-A---A-WWD-W-AWS-D-S-A-WWS-W-A-WAA-D-A-S-D-SWD-W-DWW-DWS-D-ASD-DSS-S-DWS-AWS-DWW-ASS-DSA-DAW-SAW-SSS-ADW-SSD-SWA-WWW-SWS-D-D-DWA-DDD-S-SSD-S-S-S-DDW-D-D-DAD-D-S-ADW-DD-WW-SWW----------------------------",
         difficulty= "easy",
-        targetScore = 7605,
+        targetPercent = 0.85,
     },
     {
         title = "Sea Shanty 2 (Trap Remix)",
@@ -74,8 +77,8 @@ addonTable.GuitarHeroSongs = {
         duration = 110,
         beatOffset = 0.134,
         stepsPerBeat = 2,
-        difficulty = "hard",
-        targetScore = 10560,
+        difficulty = "extreme",
+        targetPercent = 0.65,
         chart = "---------D-D-D-S-DSD-DSS-DSS-DDS-SSD-AWW-SSW-A---WSD-ASW-DDW-A---WSD-ASW-DDW-A-A-SSD-AWS-DDS-AWD-WSA-ASS-DSW-A-A-SDD-ASW-DDS-A-A-SDD-ASW-DDW-A-A-SDD-ASS-DSS-A-A-----------------------------------D---A---A-------A---D---D---A---A---A---D---A---A---A---D---D-W-W-W-S-W-S-W-W-W-S-W-S-W-S-W-S-WWS-WWS-WWW-SWW-WSS-WWS-WWS-WW--DDD-ASW-SDW-A---WSD-ASW-DDW-ASD-WSA-ASW-DDW-A-A-WDD-ASW-ADS-A-A-SSD-SSS-D-WDS-W-S-D-DSS-S-D-SSW-------------------------",
     },
     {
@@ -86,7 +89,7 @@ addonTable.GuitarHeroSongs = {
         beatOffset = 0.052,
         stepsPerBeat = 2,
         difficulty = "easy",
-        targetScore = 9990,
+        targetPercent = 0.90,
         chart = "----------------------------------D--WA--D---W-WD-----WW-W--------S------D-----W-----WWS-W-W-D----AAA-SAA---S--AS---ADW-AW-SDW-S--W-AWW--W--ASS-SDA-A-SSW-W-DDD---W---SDD-SDS-AAD-DDW-DWD-SSD-S-WWS-SDA-SSW-SAA-SDW-WAD-SWS-SSD-DWS-WWD-------AAS-SSA---WSA--WA-ASS-W-WSA--AD-A-A-SDS---A-A-----S-W-A-S---------S-----DSS-WDS-AAA-DDD-ASS-SDA-DWS-WDD-SWD-WSD-DSS-SWD-SDD-SDW-SDD-SDA-S-D----WWA-A--",
     },
     {
@@ -97,7 +100,7 @@ addonTable.GuitarHeroSongs = {
         beatOffset = 0.424,
         stepsPerBeat = 2,
         difficulty = "medium",
-        targetScore = 13900,
+        targetPercent = 0.90,
         chart = "----------W-A-S-DAW-SAW-D-W-SAW-DAW-DAW-DDW-DDW-SAW-SAW-DDW-SAW-SSW-SAS-SAW-SAS-SAS-SSD-SAS-DSW-SAS-SAW-SSW-S-WAD-W-DAW-DSW-S-WAS-------DDW-DDS-SSW-SDS-SAW-DAW-SAW-SAW-AAS-SAS-DAW-SAW-SDW-DAW-DAS-SAW-DAW-S-S---SDD-WAD-WDD-W-SDW-SDW-DDW-SDS-DAS-DDW-DDS-DDS-DSS-DDS-SSW-SSS-DSS-S-W-DDW-SAW-DAW-S-WAD-------DDW-SSW-DAW-SAW-DSW-DAS-DAW-DSW-DAS-SAW-DAW-DAS-SAS-DDW-SAW-SAW-DAW-S-W---W-A-W-DAW-DAW-DAW-D-W-SAW-DAW-DA-----------------------------------------",
     },
     {
@@ -108,7 +111,7 @@ addonTable.GuitarHeroSongs = {
         beatOffset = 0.557,
         stepsPerBeat = 2,
         difficulty = "easy",
-        targetScore = 7155,
+        targetPercent = 0.85,
         chart = "SA----S---AAD-AS--ADD-AD--S-D-DWW-D-SSW-S-D-S-A-S-D-S-D---A-D-DSW-A-ADS-S-S-D-SWD-D-D-S-W-D-W-WSS-DAA-S-W-DWS-SWW-W---S---W---D---D-AA--SWS-W-W--SW-S-D-S-S-W-D-W-ASW-SWA--AD-SWW-SSW-SDS-SWW-S-W-WAW-SWA--DD-WWW-DSW-A-SDD-D-SWW-S-W-D-SDA-W-DDD-S-AAA--DADA-ADW-SDS-------AAA-D---D",
     },
     {
@@ -119,7 +122,7 @@ addonTable.GuitarHeroSongs = {
         beatOffset = 0.183,
         stepsPerBeat = 2,
         difficulty = "hard",
-        targetScore = 10890,
+        targetPercent = 0.65,
         chart = "--------D-S-D-A--AD-W-S-----D-W-ADA---S-A-A-S-A-D-D-S-S-D---W-WD-SA-S-S-D---DWW-DD--A-S-AD-A--S-D---ASS-D-A-A-W-A-A-D-S-D--DA-S-S-----D-D-W-------S---D-----S-S-D----S--D-S-----D-----A-----W-S-A-W-S-S-----W-S-----S-A--SA-S-S--AD-S-S--WW-S-D--SD-S-W--DS-AA----S-W-DW-SD-W-A--WD-S-W---D-A-AW--S-S-WW--S-W-DW-AD-S-D---ADW-A-S-S-W-W--SD-A-D--SW-S-A--SA-W-A---W-S-WW-SS-W-D--SD-S-A--WW-A-D-S-W-S-S--WD-S-S--WA-S-S--DD-W-W--SW-S-S--WD-S-S--WD-S-W--SD-W-W---------------------------------",
     },
 }

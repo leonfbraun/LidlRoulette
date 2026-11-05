@@ -32,12 +32,7 @@ local JUDGEMENTS = {
 }
 local MISS_COLOR = { 1, 0.28, 0.28 }
 
--- targetScore in GuitarHeroSongs.lua ist ohne Multiplikator angegeben. Das tatsächliche Ziel ist
--- das, was eine Referenzrunde mit Multiplikator erreicht: So viele Treffer mit REFERENCE_POINTS,
--- dass ohne Multiplikator genau targetScore herauskäme, und die Fehler in kleinen Gruppen verteilt.
-local REFERENCE_POINTS = 75
-local REFERENCE_MISS_CLUSTER = 4
-local TARGET_DIFFICULTY = 2.1     -- hebt das Ziel aller Songs an; 1 = reine Referenzrunde
+local MAX_NOTE_POINTS = 100     -- Punkte einer zeitlich exakt getroffenen Note vor dem Multiplikator
 
 -- Layout
 local LANE_KEYS = { "A", "W", "S", "D" }
@@ -98,6 +93,7 @@ local DIFFICULTY_LABELS = {
     easy = "|cff59ff7aLEICHT|r",
     medium = "|cffffdf4aMITTEL|r",
     hard = "|cffff5c5cSCHWER|r",
+    extreme = "|cffc85cffEXTREM|r",
 }
 
 local frame
@@ -183,22 +179,14 @@ local function GetMultiplier(comboLength)
     return 1
 end
 
-local function ComputeTargetScore(noteCount, baseTarget)
-    local hitRatio = math.min(baseTarget / (noteCount * REFERENCE_POINTS), 0.98)
-    local streakLength = math.max(1, math.floor(REFERENCE_MISS_CLUSTER * hitRatio / (1 - hitRatio) + 0.5))
-    local total = 0
-    local played = 0
-    while played < noteCount do
-        for streak = 1, streakLength do
-            if played >= noteCount then
-                break
-            end
-            total = total + REFERENCE_POINTS * GetMultiplier(streak)
-            played = played + 1
-        end
-        played = played + REFERENCE_MISS_CLUSTER
+-- targetPercent bezieht sich auf die Maximalpunktzahl: jede Note exakt getroffen, ohne Combo-Abriss.
+-- Aufgerundet auf Zehner, damit das Ziel nie 0 wird und bei 1 genau das Maximum ergibt.
+local function ComputeTargetScore(noteCount, targetPercent)
+    local maxScore = 0
+    for streak = 1, noteCount do
+        maxScore = maxScore + MAX_NOTE_POINTS * GetMultiplier(streak)
     end
-    return math.floor(math.max(baseTarget, total) * TARGET_DIFFICULTY / 10 + 0.5) * 10
+    return math.ceil(maxScore * targetPercent / 10) * 10
 end
 
 local function GetRecords()
@@ -649,7 +637,7 @@ local function RegisterHit(note, timing)
     timingCount = timingCount + 1
     SetCombo(combo + 1)
 
-    score = score + math.max(50, math.floor(100 * (1 - timingError / HIT_WINDOW))) * multiplier
+    score = score + math.max(50, math.floor(MAX_NOTE_POINTS * (1 - timingError / HIT_WINDOW))) * multiplier
     if not targetReached and score >= targetScore then
         targetReached = true
         PlayPopup(bannerPopup, "ZIEL ERREICHT!", { 1, 0.84, 0.25 })
@@ -1307,7 +1295,7 @@ function GuitarHeroUi:Start(challengeIDArg)
     local songs = addonTable.GuitarHeroSongs or {}
     local challenge = addonTable.Roulette.GetChallenge(challengeIDArg)
     local requiredDifficulty = challenge and challenge.guitarHeroDifficulty
-    if requiredDifficulty ~= "easy" and requiredDifficulty ~= "medium" and requiredDifficulty ~= "hard" then
+    if not DIFFICULTY_LABELS[requiredDifficulty] then
         print("|cffff0000[Lidl Roulette]|r WoW-Hero hat keine gültige Schwierigkeitsstufe.")
         return
     end
@@ -1321,7 +1309,7 @@ function GuitarHeroUi:Start(challengeIDArg)
             and type(candidate.stepsPerBeat) == "number" and candidate.stepsPerBeat >= 1
             and candidate.stepsPerBeat <= 8 and candidate.stepsPerBeat == math.floor(candidate.stepsPerBeat)
             and type(candidate.chart) == "string" and #candidate.chart > 0 and #candidate.chart <= 1024
-            and type(candidate.targetScore) == "number" and candidate.targetScore > 0
+            and type(candidate.targetPercent) == "number" and candidate.targetPercent > 0 and candidate.targetPercent <= 1
             and type(candidate.music) == "string" and candidate.music ~= "" then
             local candidateChart = candidate.chart:gsub("%s", ""):upper()
             if candidateChart:match("^[WASD%-]+$") and candidateChart:match("[WASD]") then
@@ -1356,7 +1344,7 @@ function GuitarHeroUi:Start(challengeIDArg)
         end
     end
 
-    targetScore = ComputeTargetScore(#notes, song.targetScore)
+    targetScore = ComputeTargetScore(#notes, song.targetPercent)
     local records = GetRecords()
     previousRecord = records and records[song.title]
 
