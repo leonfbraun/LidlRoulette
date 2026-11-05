@@ -37,7 +37,7 @@ addonTable.Challenges = {
     { rarity= "Uncommon", tags={ "Negativ", "Clanker", "Musik" }, osu=true, osuDifficulty="easy", title="Osu!: Easy", description="Spiele einen zufälligen Song der Schwierigkeitsstufe Easy in Osu!. Verfehlst du den Zielscore, zahle Steuern gemäß \"/lidl steuer\" in Silber an die Gilde."},
     { rarity= "Rare", tags={ "Negativ"}, title= "Tax-Time!", description="Zahle Steuern an deine Gilde. Den Betrag erfährst du mit \"/lidl steuer\"."},
     { rarity= "Rare", tags={ "Negativ" }, title="Bisschen Kleingeld?", description="Bettle bei einem Spieler für ein bisschen Kleingeld. Dein Ertrag kommt in die Gildenbank"},
-    { rarity= "Rare", tags={ "Negativ" }, title="Prost!", description="Besorg dir was alkohilisches zum Trinken und sauf dich voll!" },
+    { rarity= "Rare", tags={ "Negativ" }, title="Prost!", description="Besorg dir in der Taverne etwas alkohilisches zum Trinken und sauf dich voll!" },
     { rarity= "Rare", tags={ "Positiv", "Clanker" }, timeInSeconds=300, devilMayCryCombo=true, title="Devil May Cry", description="Für 5 Minuten lassen Treffer an Monstern deinen Combo-Meter steigen. Eine Timerpause bricht die laufende Combo ab. Knacke den Highscore!" },
     { rarity= "Rare", tags={ "Positiv", "Clanker" }, timeInSeconds=300, bayonettaCombo=true, title="Witchtime", description="Sammle in 5 Minuten Combo Points. Eine Timerpause bricht die laufende Combo ab. Schlage den Highscore!" },
     { rarity= "Rare", tags={ "Positiv" }, title="For me? *blushes*", description="Deine Mitspieler schenken dir die Mats für ein von dir herstellbares Item!"},
