@@ -27,7 +27,7 @@ addonTable.Challenges = {
     { rarity= "Uncommon", tags={ "Negativ", "Clanker" }, timeInSeconds=300, fartSounds=true, title="Stinky-Abilities", description="Für die nächsten 5 Minuten stinkt es, wenn du eine Fähigkeit benutzt" },
     { rarity= "Uncommon", tags={ "Positiv" }, timeInSeconds=120, title="Bob Ross", description="Male innerhalb 2 Minuten eine kleine World of Warcraft Impression in Paint und poste sie auf Discord" },
     { rarity= "Uncommon", tags={ "Negativ" }, title= "Shots, shots, shots!", description="Trinke einen Shot deiner Wahl"},
-    { rarity= "Uncommon", tags={ "Negativ", "Sport" }, title= "I'm planking", description="Mache für 45 Sekunden eine Plank deiner Wahl (Front, Side, Reverse)"},
+    { rarity= "Uncommon", tags={ "Negativ", "Sport" }, title= "I'm planking", description="Mache für 90 Sekunden eine Plank deiner Wahl (Front, Side, Reverse)"},
     { rarity= "Uncommon", tags={ "Negativ" }, title="Hell's Kitchen", description="Koche für alle eine leckere Mahlzeit. Deine Mitspieler bewerten deine Kochkünste" },
     { rarity= "Uncommon", tags={ "Negativ" }, timeInSeconds=600, title="Nice-Guy", description="Begrüße ALLE Spieler*innen den du in den nächsten 10 Minunten begegnest" },
     { rarity= "Uncommon", tags={ "Negativ" }, title="Fischverkäufer", description="Angle einen Fisch und verkauf ihn an einen anderen Spieler. Dein Ertrag kommt in die Gildenbank"},
