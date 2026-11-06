@@ -25,14 +25,13 @@ local RANKS = {                 -- absteigend sortiert, Anteil gewichteter Treff
     { rank = "C", accuracy = 0.55, color = { 1, 0.65, 0.25 } },
     { rank = "D", accuracy = 0, color = { 1, 0.3, 0.3 } },
 }
+local MAX_NOTE_POINTS = 100     -- Punkte einer perfekt oder gut getroffenen Note vor dem Multiplikator
 local JUDGEMENTS = {
-    perfect = { text = "PERFEKT", weight = 1, color = { 0.45, 1, 0.55 }, particles = 10 },
-    good = { text = "GUT", weight = 0.75, color = { 1, 0.9, 0.3 }, particles = 6 },
-    ok = { text = "OK", weight = 0.5, color = { 1, 0.62, 0.25 }, particles = 3 },
+    perfect = { text = "PERFEKT", weight = 1, points = MAX_NOTE_POINTS, color = { 0.45, 1, 0.55 }, particles = 10 },
+    good = { text = "GUT", weight = 0.75, points = MAX_NOTE_POINTS, color = { 1, 0.9, 0.3 }, particles = 6 },
+    ok = { text = "OK", weight = 0.5, points = 95, color = { 1, 0.62, 0.25 }, particles = 3 },
 }
 local MISS_COLOR = { 1, 0.28, 0.28 }
-
-local MAX_NOTE_POINTS = 100     -- Punkte einer zeitlich exakt getroffenen Note vor dem Multiplikator
 
 -- Layout
 local LANE_KEYS = { "A", "W", "S", "D" }
@@ -179,7 +178,7 @@ local function GetMultiplier(comboLength)
     return 1
 end
 
--- targetPercent bezieht sich auf die Maximalpunktzahl: jede Note exakt getroffen, ohne Combo-Abriss.
+-- targetPercent bezieht sich auf die Maximalpunktzahl: jede Note mindestens "gut" getroffen, ohne Combo-Abriss.
 -- Aufgerundet auf Zehner, damit das Ziel nie 0 wird und bei 1 genau das Maximum ergibt.
 local function ComputeTargetScore(noteCount, targetPercent)
     local maxScore = 0
@@ -637,7 +636,7 @@ local function RegisterHit(note, timing)
     timingCount = timingCount + 1
     SetCombo(combo + 1)
 
-    score = score + math.max(50, math.floor(MAX_NOTE_POINTS * (1 - timingError / HIT_WINDOW))) * multiplier
+    score = score + judgement.points * multiplier
     if not targetReached and score >= targetScore then
         targetReached = true
         PlayPopup(bannerPopup, "ZIEL ERREICHT!", { 1, 0.84, 0.25 })

@@ -42,11 +42,13 @@ end
 
 function addonTable:GetTaxSilver(playerLevel)
     playerLevel = playerLevel or UnitLevel("player") or 1
+    -- Aufrunden, da die Kommunikation nur ganze Beträge akzeptiert und 0 als "nicht besteuert" gilt.
+    local halfLevel = math.ceil(playerLevel / 2)
     if playerLevel <= 20 then
-        return playerLevel
+        return halfLevel
     end
 
-    return playerLevel + 5 * math.ceil((playerLevel - 20) / 10)
+    return halfLevel + 5 * math.ceil((playerLevel - 20) / 10)
 end
 
 local savedVariablesFrame = CreateFrame("Frame")
