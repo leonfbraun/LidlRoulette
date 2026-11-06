@@ -2,7 +2,7 @@ local addonName, addonTable = ...
 
 -- targetPercent bezieht sich auf die Maximalpunktzahl inklusive Combo-Bonus. Der Bonus macht bei
 -- langen Songs einen großen Teil aus, deshalb sehen die Werte niedrig aus: Sie entsprechen etwa
--- 70 % (easy), 75 % (medium) und 80 % (hard, legendary) getroffenen Objekten.
+-- 70 % (medium), 75 % (medium) und 80 % (hard, legendary) getroffenen Objekten.
 addonTable.OsuSongs = {
     {
         title = "Sea Shanty 2 (Trap Remix)",
@@ -26,7 +26,7 @@ addonTable.OsuSongs = {
         timingOffset = 0.163,
         stepsPerBeat = 2,
         difficulty = "hard",
-        targetPercent = 0.5,
+        targetPercent = 0.4,
     },
     {
         title = "Leni Wöss - Aura",
@@ -38,7 +38,7 @@ addonTable.OsuSongs = {
         timingOffset = 0,
         stepsPerBeat = 2,
         difficulty = "hard",
-        targetPercent = 0.27,
+        targetPercent = 0.22,
     },
     {
         title = "JoJo Steel Ball Run - Spin",
@@ -49,8 +49,8 @@ addonTable.OsuSongs = {
         beatOffset = 0,
         timingOffset = 0,
         stepsPerBeat = 2,
-        difficulty = "easy",
-        targetPercent = 0.75,
+        difficulty = "medium",
+        targetPercent = 0.50,
     },
     {
         title = "Micheal Jackson - Chicago",
@@ -62,7 +62,7 @@ addonTable.OsuSongs = {
         timingOffset = 0.163,
         stepsPerBeat = 2,
         difficulty = "medium",
-        targetPercent = 0.60,
+        targetPercent = 0.50,
     },
     {
         title = "Kiryu - Bakamitai",
@@ -73,8 +73,8 @@ addonTable.OsuSongs = {
         beatOffset = 0,
         timingOffset = 0,
         stepsPerBeat = 2,
-        difficulty = "easy",
-        targetPercent = 0.85,
+        difficulty = "medium",
+        targetPercent = 0.50,
     },
     {
         title = "Bring Me To Life",
@@ -85,7 +85,7 @@ addonTable.OsuSongs = {
         beatOffset = 0,
         timingOffset = 0,
         stepsPerBeat = 2,
-        difficulty = "easy",
+        difficulty = "medium",
         targetPercent = 0.5,
     },
     {
@@ -98,7 +98,7 @@ addonTable.OsuSongs = {
         timingOffset = 0.163,
         stepsPerBeat = 2,
         difficulty = "medium",
-        targetPercent = 0.45,
+        targetPercent = 0.25,
     },
     {
         title = "Gary komm heim",
@@ -109,7 +109,7 @@ addonTable.OsuSongs = {
         beatOffset = 0,
         timingOffset =  0.163,
         stepsPerBeat = 2,
-        difficulty = "easy",
+        difficulty = "medium",
         targetPercent = 0.6,
     },
     {
@@ -136,7 +136,7 @@ addonTable.OsuSongs = {
         timingOffset = 0,
         stepsPerBeat = 2,
         difficulty = "legendary",
-        targetPercent = 0.18,
+        targetPercent = 0.10,
         -- Das Chart folgt der Melodie. Hauptmotiv: Triller H-Cis-H-Cis-H-A (Kreis-Stream), danach langes Fis (Slider).
         -- Abschnitte mit bpm = 300 und stepsPerBeat = 8 haben kein festes Raster im Song: 1 Zeichen = 25 ms.
         -- Sonst gilt bei stepsPerBeat = 2: 1 Zeile im Hauptteil und im Chaos-Teil = 16 Beats.
